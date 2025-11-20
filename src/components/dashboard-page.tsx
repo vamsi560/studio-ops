@@ -1,0 +1,115 @@
+'use client';
+import { useState, useEffect, useMemo } from 'react';
+import { differenceInDays } from 'date-fns';
+import { DashboardLayout } from '@/components/dashboard-layout';
+import Header from '@/components/dashboard/header';
+import UploadModal from '@/components/dashboard/upload-modal';
+import StatCard from '@/components/dashboard/stat-card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ALL_RESOURCES, INITIAL_RESOURCES } from '@/lib/mock-data';
+import type { Resource, BenchAgeingData } from '@/lib/types';
+import BenchAgeing from './dashboard/bench-ageing';
+import GradeDistributionChart from './dashboard/grade-distribution-chart';
+import SkillDistributionChart from './dashboard/skill-distribution-chart';
+import { Users, Briefcase, UserX, TrendingUp, Sparkles } from 'lucide-react';
+
+export default function DashboardPage() {
+  const [isClient, setIsClient] = useState(false);
+  const [resources, setResources] = useState<Resource[]>(INITIAL_RESOURCES);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const handleNewResources = (newResourceIds: string[]) => {
+    const newResources = ALL_RESOURCES.filter(r => newResourceIds.includes(r.vamid));
+    setResources(prev => [...prev, ...newResources]);
+  };
+  
+  const benchAgeingData = useMemo((): BenchAgeingData => {
+    const today = new Date();
+    const data: BenchAgeingData = { '0-30': 0, '31-60': 0, '61-90': 0, more_than_90: 0 };
+    resources.forEach(resource => {
+      const daysOnBench = differenceInDays(today, new Date(resource.joiningDate));
+      if (daysOnBench <= 30) data['0-30']++;
+      else if (daysOnBench <= 60) data['31-60']++;
+      else if (daysOnBench <= 90) data['61-90']++;
+      else data.more_than_90++;
+    });
+    return data;
+  }, [resources]);
+
+  const gradeDistribution = useMemo(() => {
+    return resources
+      .reduce((acc, resource) => {
+        const existing = acc.find(item => item.name === resource.grade);
+        if (existing) {
+          existing.value++;
+        } else {
+          acc.push({ name: resource.grade, value: 1 });
+        }
+        return acc;
+      }, [] as { name: string; value: number }[])
+      .sort((a, b) => b.value - a.value);
+  }, [resources]);
+
+  const skillDistribution = useMemo(() => {
+    return resources
+      .reduce((acc, resource) => {
+        const skill = resource.primarySkill;
+        const existing = acc.find(item => item.name === skill);
+        if (existing) {
+          existing.value++;
+        } else {
+          acc.push({ name: skill, value: 1 });
+        }
+        return acc;
+      }, [] as { name: string; value: number }[])
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [resources]);
+
+  if (!isClient) {
+    return (
+       <DashboardLayout>
+        <Header onUploadClick={() => {}} />
+        <main className="p-4 sm:p-6 lg:p-8 space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-32" />)}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+              <Skeleton className="lg:col-span-3 h-80" />
+              <Skeleton className="lg:col-span-4 h-80" />
+          </div>
+        </main>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <Header onUploadClick={() => setIsModalOpen(true)} />
+      <UploadModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        currentResourceIds={resources.map(r => r.vamid)}
+        onNewResources={handleNewResources}
+      />
+      <main className="p-4 sm:p-6 lg:p-8 space-y-6">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+          <StatCard icon={Users} title="Total Bench" value={resources.length} />
+          <StatCard icon={Briefcase} title="Internal Fulfilment" value="8" description="+2 this month" />
+          <StatCard icon={UserX} title="Client Rejections" value="3" />
+          <StatCard icon={TrendingUp} title="Hiring Forecast" value="12" />
+          <StatCard icon={Sparkles} title="Upskilling Forecast" value="6" />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+           <BenchAgeing data={benchAgeingData} />
+           <GradeDistributionChart data={gradeDistribution} />
+        </div>
+        <SkillDistributionChart data={skillDistribution} />
+      </main>
+    </DashboardLayout>
+  );
+}
