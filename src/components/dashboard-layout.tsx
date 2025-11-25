@@ -37,7 +37,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/" passHref>
+              <Link href="/" passHref legacyBehavior>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname === '/'}
@@ -51,7 +51,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/resource-mapping" passHref>
+              <Link href="/resource-mapping" passHref legacyBehavior>
                 <SidebarMenuButton
                   asChild
                   isActive={pathname === '/resource-mapping'}
@@ -71,10 +71,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 tooltip="Resources"
                 isDisabled
               >
-                <>
+                
                   <Users />
                   <span>Resources</span>
-                </>
+                
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
