@@ -40,6 +40,7 @@ import {
   summarizeResourceMatches,
 } from '@/ai/flows/summarize-resource-matches';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 type Stage = 'idle' | 'processing' | 'result' | 'error';
@@ -80,7 +81,7 @@ export default function ResourceMappingPage() {
             const json = XLSX.utils.sheet_to_json(worksheet);
             // Ensure plain objects by stringifying and parsing
             resolve(JSON.parse(JSON.stringify(json)));
-          } catch (err) => {
+          } catch (err) {
             reject(err);
           }
         };
