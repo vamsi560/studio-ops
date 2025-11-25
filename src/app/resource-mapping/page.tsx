@@ -100,10 +100,23 @@ export default function ResourceMappingPage() {
         readFileAsJson(rrfFile),
         readFileAsJson(benchFile)
       ]);
+
+      // Pre-process data to only send necessary columns to the AI
+      const relevantRrfData = rrfJson.map(rrf => ({
+        "RRF ID": rrf["RRF ID"],
+        "POS Title": rrf["POS Title"],
+        "Role": rrf["Role"],
+      }));
+
+      const relevantBenchData = benchJson.map(bench => ({
+          "Name": bench["Name"],
+          "VAMID": bench["VAMID"],
+          "Skill": bench["Skill"],
+      }));
       
       const apiResult = await findBestCandidateForAllRRFs({
-        rrfsData: rrfJson,
-        benchData: benchJson,
+        rrfsData: relevantRrfData,
+        benchData: relevantBenchData,
       });
 
       setResults(apiResult);
