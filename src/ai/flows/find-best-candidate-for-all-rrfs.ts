@@ -44,20 +44,29 @@ const findCandidatesPrompt = ai.definePrompt({
   name: 'findCandidatesPrompt',
   input: { schema: FindBestCandidateForAllRRFsInputSchema },
   output: { schema: FindBestCandidateForAllRRFsOutputSchema },
-  prompt: `You are an expert HR analyst. Your task is to analyze a list of RRFs (Resource Request Forms) and a Bench Report of available employees.
+  prompt: `You are an expert HR analyst acting as a data processing service. Your task is to analyze the provided JSON data for RRFs and Bench Resources and return a JSON output matching the specified schema.
 
-For EACH RRF in the provided 'rrfsData' list, you must identify the top 3-5 most suitable candidates from the 'benchData' list.
+You are given two JSON arrays: 'rrfsData' and 'benchData'.
 
-IMPORTANT: When analyzing, use only the following columns:
-- From the RRF sheet ('rrfsData'): Use 'RRF ID', 'POS Title', and 'Role'.
-- From the Bench sheet ('benchData'): Use 'Name', 'VAMID', and 'Skill'. Match the 'Skill' from the bench sheet with the requirements in 'POS Title' and 'Role' from the RRF sheet.
+For EACH RRF object in the 'rrfsData' array, you MUST identify the top 3-5 most suitable candidates from the 'benchData' array.
 
-For each candidate matched to an RRF, provide:
-1. The candidate's name and VAMID.
-2. A suitability score from 0 to 100.
-3. A brief justification for the match, highlighting key skills and experience.
+IMPORTANT: When analyzing, use ONLY the following keys from the JSON objects:
+- From the RRF objects in 'rrfsData': Use 'RRF ID', 'POS Title', and 'Role'.
+- From the Bench objects in 'benchData': Use 'Name', 'VAMID', and 'Skill'. Match the 'Skill' from the bench data with the requirements in 'POS Title' and 'Role' from the RRF data.
 
-Return ONLY a JSON array. Each item in the array should correspond to an RRF and contain the RRF ID and a list of the top candidates for that RRF, sorted by suitability score.
+For each RRF, generate a list of candidates. For each candidate, provide:
+1. The candidate's name and VAMID, taken directly from the 'benchData'.
+2. A suitability score from 0 to 100 based on the skill match.
+3. A brief justification for the match.
+
+The data to analyze is as follows:
+RRF Data:
+{{{json rrfsData}}}
+
+Bench Data:
+{{{json benchData}}}
+
+Return ONLY a valid JSON array that adheres to the output schema. Each item in the array must correspond to an RRF and contain the RRF ID and a list of the top candidates for that RRF, sorted by suitability score in descending order. Do not include any explanatory text or markdown formatting in your response.
 `,
 });
 
