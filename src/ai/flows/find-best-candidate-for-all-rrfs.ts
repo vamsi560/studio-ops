@@ -44,16 +44,18 @@ const findCandidatesPrompt = ai.definePrompt({
   name: 'findCandidatesPrompt',
   input: { schema: FindBestCandidateForAllRRFsInputSchema },
   output: { schema: FindBestCandidateForAllRRFsOutputSchema },
-  prompt: `You are an expert HR analyst. Your task is to analyze a list of RRFs (Resource Request Forms) and a Bench Report of available employees, provided in the input.
+  prompt: `You are an expert HR analyst. Your task is to analyze a list of RRFs (Resource Request Forms) and a Bench Report of available employees.
 
 For EACH RRF in the provided list, you must identify the top 3-5 most suitable candidates from the Bench Report.
+
+IMPORTANT: When analyzing, use only the following columns:
+- From the RRF sheet ('rrfsData'): Use 'RRF ID', 'POS Title', and 'Role'.
+- From the Bench sheet ('benchData'): Use 'Name' and 'Skill'. Match the 'Skill' from the bench sheet with the requirements in 'POS Title' and 'Role' from the RRF sheet.
 
 For each candidate matched to an RRF, provide:
 1. The candidate's name and VAMID.
 2. A suitability score from 0 to 100.
 3. A brief justification for the match, highlighting key skills and experience.
-
-Analyze the 'rrfsData' and 'benchData' from the input to perform this task.
 
 Return ONLY a JSON array. Each item in the array should correspond to an RRF and contain the RRF ID and a list of the top candidates for that RRF.
 Example:
