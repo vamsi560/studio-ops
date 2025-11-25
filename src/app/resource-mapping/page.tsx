@@ -7,6 +7,7 @@ import {
   FileCheck2,
   AlertTriangle,
   GitCompareArrows,
+  Sparkles,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/hooks/use-toast';
@@ -35,6 +36,9 @@ import {
   findBestCandidateForAllRRFs,
   type FindBestCandidateForAllRRFsOutput,
 } from '@/ai/flows/find-best-candidate-for-all-rrfs';
+import {
+  summarizeResourceMatches,
+} from '@/ai/flows/summarize-resource-matches';
 import { Badge } from '@/components/ui/badge';
 
 
@@ -46,6 +50,7 @@ export default function ResourceMappingPage() {
   const [rrfFile, setRrfFile] = useState<File | null>(null);
   const [benchFile, setBenchFile] = useState<File | null>(null);
   const [results, setResults] = useState<FindBestCandidateForAllRRFsOutput>([]);
+  const [summary, setSummary] = useState<string>('');
   const { toast } = useToast();
 
   const handleFileChange =
@@ -60,6 +65,7 @@ export default function ResourceMappingPage() {
   const handleFindMatches = async () => {
     if (!rrfFile || !benchFile) return;
     setStage('processing');
+    setSummary('');
 
     const readFileAsJson = (file: File): Promise<any[]> =>
       new Promise((resolve, reject) => {
@@ -74,7 +80,7 @@ export default function ResourceMappingPage() {
             const json = XLSX.utils.sheet_to_json(worksheet);
             // Ensure plain objects by stringifying and parsing
             resolve(JSON.parse(JSON.stringify(json)));
-          } catch (err) {
+          } catch (err) => {
             reject(err);
           }
         };
@@ -91,12 +97,18 @@ export default function ResourceMappingPage() {
         rrfsData: rrfJson,
         benchData: benchJson,
       });
+
       setResults(apiResult);
       setStage('result');
       toast({
         title: "Analysis Complete",
         description: `Found potential matches for ${apiResult.length} RRFs.`
       })
+
+      // Generate summary after getting results
+      const summaryResult = await summarizeResourceMatches({ results: apiResult });
+      setSummary(summaryResult.summary);
+
     } catch (error) {
       console.error('Candidate search failed:', error);
       setStage('error');
@@ -113,6 +125,7 @@ export default function ResourceMappingPage() {
     setRrfFile(null);
     setBenchFile(null);
     setResults([]);
+    setSummary('');
   }
 
   const getSuitabilityBadge = (score: number) => {
@@ -234,6 +247,29 @@ export default function ResourceMappingPage() {
                 <p className="text-muted-foreground">Something went wrong. Please check your files and try again.</p>
             </div>
         )}
+        
+        {stage === 'result' && summary && (
+            <Card>
+                <CardHeader className='flex-row items-start gap-4'>
+                    <Sparkles className="size-6 text-accent" />
+                    <div>
+                        <CardTitle className="text-lg">AI Summary</CardTitle>
+                        <CardDescription>A quick overview of the matching results.</CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {summary ? (
+                        <p className="text-sm text-foreground">{summary}</p>
+                    ) : (
+                        <div className="space-y-2">
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        )}
+
 
         {stage === 'result' && results.length > 0 && (
             <Card>
