@@ -43,13 +43,11 @@ const analyzeResourcesPrompt = ai.definePrompt({
   output: {
     schema: AnalyzeAndDeduplicateResourcesOutputSchema,
   },
-  prompt: `You are an expert in resource management and data analysis. You are provided with data from a newly uploaded Excel sheet and a list of VAMIDs representing previously uploaded resources.
+  prompt: `You are an expert in resource management and data analysis. You are provided with data from a newly uploaded resource sheet and a list of VAMIDs representing previously uploaded resources.
 
-  Your task is to analyze the new Excel data, identify resources that are not present in the list of previous resources, and return a list of VAMIDs for these new resources.
+  Your task is to analyze the new resource data, identify resources that are not present in the list of previous resources, and return a list of VAMIDs for these new resources.
 
-  Consider potential slight discrepancies in resource names when comparing against previous records. Use your best judgment to determine if a resource is truly new or simply a variation of an existing record.
-
-  The new Excel data is provided in the 'excelDataUri' input parameter.
+  The new resource data is provided in a structured format in the input.
   Here's the list of previous resource IDs (VAMIDs): {{{previousResourceIds}}}
 
   Return ONLY a JSON object containing a \"newResourceIds\" key with an array of VAMIDs for the newly identified resources.

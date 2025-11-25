@@ -22,8 +22,9 @@ import { Loader2, UploadCloud, FileCheck2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { suggestColumnMappings } from '@/ai/flows/smart-column-mapping';
 import { analyzeAndDeduplicateResources } from '@/ai/flows/analyze-and-deduplicate-resources';
-import { APP_DATA_FIELDS, MOCK_EXCEL_COLUMNS } from '@/lib/mock-data';
+import { APP_DATA_FIELDS } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
+import * as XLSX from 'xlsx';
 
 
 type Stage = 'idle' | 'mapping' | 'processing' | 'error';
@@ -40,6 +41,7 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
   const [stage, setStage] = useState<Stage>('idle');
   const [file, setFile] = useState<File | null>(null);
   const [fileDataUri, setFileDataUri] = useState<string | null>(null);
+  const [excelColumns, setExcelColumns] = useState<string[]>([]);
   const [mappings, setMappings] = useState<Mapping>({});
   const [suggestedMappings, setSuggestedMappings] = useState<Mapping>({});
   const { toast } = useToast();
@@ -56,6 +58,7 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
     setFileDataUri(null);
     setMappings({});
     setSuggestedMappings({});
+    setExcelColumns([]);
     setStage('idle');
   };
 
@@ -69,17 +72,31 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
     setStage('mapping');
 
     const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
+    reader.readAsArrayBuffer(file);
+    reader.onload = async (e) => {
         try {
-            const dataUri = reader.result as string;
-            setFileDataUri(dataUri);
-            const result = await suggestColumnMappings({
-                excelColumns: MOCK_EXCEL_COLUMNS,
-                dataFields: APP_DATA_FIELDS,
-            });
-            setSuggestedMappings(result);
-            setMappings(result);
+            const data = e.target?.result;
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[];
+            setExcelColumns(headers);
+
+            // Also convert to data URI for the next step
+            const fileReaderForDataUri = new FileReader();
+            fileReaderForDataUri.readAsDataURL(file);
+            fileReaderForDataUri.onload = async (event) => {
+                const dataUri = event.target?.result as string;
+                setFileDataUri(dataUri);
+
+                 const result = await suggestColumnMappings({
+                    excelColumns: headers,
+                    dataFields: APP_DATA_FIELDS,
+                });
+                setSuggestedMappings(result);
+                setMappings(result);
+            }
+
         } catch (error) {
             console.error('Mapping suggestion failed:', error);
             setStage('error');
@@ -188,7 +205,7 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
                         <SelectItem value="null">
                           <span className="text-muted-foreground">Do not map</span>
                         </SelectItem>
-                        {MOCK_EXCEL_COLUMNS.map(col => (
+                        {excelColumns.map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}
                       </SelectContent>
