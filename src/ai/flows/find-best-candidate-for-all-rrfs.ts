@@ -10,10 +10,10 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-// Input: RRFs and Bench data as stringified JSON
+// Input: RRFs and Bench data as structured objects
 const FindBestCandidateForAllRRFsInputSchema = z.object({
-  rrfsData: z.string().describe('A JSON string representing an array of RRF objects.'),
-  benchData: z.string().describe('A JSON string representing an array of available bench resources.'),
+  rrfsData: z.array(z.any()).describe('An array of RRF objects.'),
+  benchData: z.array(z.any()).describe('An array of available bench resources.'),
 });
 export type FindBestCandidateForAllRRFsInput = z.infer<typeof FindBestCandidateForAllRRFsInputSchema>;
 
@@ -54,10 +54,10 @@ For each candidate matched to an RRF, provide:
 3. A brief justification for the match, highlighting key skills and experience.
 
 The RRF data is:
-{{{rrfsData}}}
+{{{json rrfsData}}}
 
 The Bench Report data is:
-{{{benchData}}}
+{{{json benchData}}}
 
 Return ONLY a JSON array. Each item in the array should correspond to an RRF and contain the RRF ID and a list of the top candidates for that RRF.
 Example:

@@ -61,17 +61,21 @@ export default function ResourceMappingPage() {
     if (!rrfFile || !benchFile) return;
     setStage('processing');
 
-    const readFileAsJson = (file: File): Promise<string> =>
+    const readFileAsJson = (file: File): Promise<any[]> =>
       new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.readAsArrayBuffer(file);
         reader.onload = () => {
-          const data = new Uint8Array(reader.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const json = XLSX.utils.sheet_to_json(worksheet);
-          resolve(JSON.stringify(json, null, 2));
+          try {
+            const data = new Uint8Array(reader.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet);
+            resolve(json);
+          } catch (err) {
+            reject(err);
+          }
         };
         reader.onerror = reject;
       });
