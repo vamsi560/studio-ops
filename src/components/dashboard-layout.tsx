@@ -2,6 +2,7 @@
 import {
   LayoutDashboard,
   Users,
+  GitCompareArrows,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -45,6 +46,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
+              <SidebarMenuButton
+                href="/resource-mapping"
+                isActive={pathname === '/resource-mapping'}
+                tooltip="Resource Mapping"
+              >
+                <GitCompareArrows />
+                <span>Resource Mapping</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
               <SidebarMenuButton
                 href="#"
                 isActive={pathname === '/resources'}
