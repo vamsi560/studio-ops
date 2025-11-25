@@ -53,7 +53,7 @@ service cloud.firestore {
     match /resources/{resourceId} {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
-      allow create: if false;
+      allow create: if isSignedIn();
       allow update: if false;
       allow delete: if false;
     }

@@ -21,10 +21,10 @@ import {
 import { Loader2, UploadCloud, FileCheck2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { suggestColumnMappings } from '@/ai/flows/smart-column-mapping';
-import { analyzeAndDeduplicateResources } from '@/ai/flows/analyze-and-deduplicate-resources';
 import { APP_DATA_FIELDS } from '@/lib/mock-data';
 import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
+import type { Resource } from '@/lib/types';
 
 
 type Stage = 'idle' | 'mapping' | 'processing' | 'error';
@@ -34,14 +34,14 @@ interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentResourceIds: string[];
-  onNewResources: (newResourceIds: string[]) => void;
+  onNewResources: (newResources: Partial<Resource>[]) => void;
 }
 
 export default function UploadModal({ isOpen, onClose, currentResourceIds, onNewResources }: UploadModalProps) {
   const [stage, setStage] = useState<Stage>('idle');
   const [file, setFile] = useState<File | null>(null);
-  const [fileDataUri, setFileDataUri] = useState<string | null>(null);
   const [excelColumns, setExcelColumns] = useState<string[]>([]);
+  const [excelData, setExcelData] = useState<any[]>([]);
   const [mappings, setMappings] = useState<Mapping>({});
   const [suggestedMappings, setSuggestedMappings] = useState<Mapping>({});
   const { toast } = useToast();
@@ -55,10 +55,10 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
 
   const handleReset = () => {
     setFile(null);
-    setFileDataUri(null);
     setMappings({});
     setSuggestedMappings({});
     setExcelColumns([]);
+    setExcelData([]);
     setStage('idle');
   };
 
@@ -79,23 +79,18 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
             const workbook = XLSX.read(data, { type: 'array' });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            const headers = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[];
+            const headers = (XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[]).filter(Boolean);
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
             setExcelColumns(headers);
+            setExcelData(jsonData);
 
-            // Also convert to data URI for the next step
-            const fileReaderForDataUri = new FileReader();
-            fileReaderForDataUri.readAsDataURL(file);
-            fileReaderForDataUri.onload = async (event) => {
-                const dataUri = event.target?.result as string;
-                setFileDataUri(dataUri);
-
-                 const result = await suggestColumnMappings({
-                    excelColumns: headers,
-                    dataFields: APP_DATA_FIELDS,
-                });
-                setSuggestedMappings(result);
-                setMappings(result);
-            }
+            const result = await suggestColumnMappings({
+                excelColumns: headers,
+                dataFields: APP_DATA_FIELDS,
+            });
+            setSuggestedMappings(result);
+            setMappings(result);
 
         } catch (error) {
             console.error('Mapping suggestion failed:', error);
@@ -117,31 +112,53 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
   };
   
   const handleProcessFile = async () => {
-    if (!fileDataUri) return;
     setStage('processing');
     try {
-      const result = await analyzeAndDeduplicateResources({
-        excelDataUri: fileDataUri,
-        previousResourceIds: currentResourceIds,
-      });
+        const appFieldToExcelColumn = Object.fromEntries(
+            Object.entries(mappings).map(([appField, excelCol]) => [appField, excelCol])
+        );
 
-      onNewResources(result.newResourceIds || ['VAM1011', 'VAM1012', 'VAM1013', 'VAM1014', 'VAM1015']);
+        const newResources: Partial<Resource>[] = excelData
+            .map(row => {
+                const resource: Partial<Resource> = {};
+                for (const appField of APP_DATA_FIELDS) {
+                    const excelCol = appFieldToExcelColumn[appField];
+                    if (excelCol && row[excelCol]) {
+                        // A bit of type conversion and mapping logic
+                        if (appField === 'VAMID') resource.vamid = String(row[excelCol]);
+                        if (appField === 'Name') resource.name = row[excelCol];
+                        if (appField === 'Joining Date') {
+                            // Excel dates can be tricky, this is a basic conversion
+                            if (typeof row[excelCol] === 'number') {
+                                const date = XLSX.SSF.parse_date_code(row[excelCol]);
+                                resource.joiningDate = new Date(date.y, date.m - 1, date.d).toISOString().split('T')[0];
+                            } else {
+                                resource.joiningDate = new Date(row[excelCol]).toISOString().split('T')[0];
+                            }
+                        }
+                        if (appField === 'Grade') resource.grade = row[excelCol];
+                        if (appField === 'Primary Skill') resource.primarySkill = row[excelCol];
+                        if (appField === 'Current Skill') resource.currentSkill = row[excelCol];
+                    }
+                }
+                return resource;
+            })
+            .filter(r => r.vamid && !currentResourceIds.includes(r.vamid));
+
+      onNewResources(newResources);
       toast({
         title: 'Upload Successful',
-        description: `${result.newResourceIds?.length || 5} new resources have been added.`,
+        description: `${newResources.length} new resources have been added to the database.`,
       });
       handleClose();
     } catch (error) {
-      console.error('Deduplication failed:', error);
+      console.error('File processing failed:', error);
       setStage('error');
       toast({
         variant: 'destructive',
         title: 'Processing Failed',
-        description: 'AI analysis of the Excel file failed. Simulating with mock data.',
+        description: 'Could not process the Excel file.',
       });
-      // Fallback for demo purposes
-      onNewResources(['VAM1011', 'VAM1012', 'VAM1013', 'VAM1014', 'VAM1015']);
-      handleClose();
     }
   };
 
@@ -153,7 +170,7 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
             <DialogHeader>
               <DialogTitle>Upload Resource Excel</DialogTitle>
               <DialogDescription>
-                Upload the latest resource allocation sheet. The system will analyze it for new entries.
+                Upload the latest resource allocation sheet. The system will analyze it and save new entries to the database.
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
@@ -225,7 +242,7 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
           <div className="flex flex-col items-center justify-center h-64 gap-4">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
             <DialogTitle>Processing Data</DialogTitle>
-            <DialogDescription>AI is analyzing resources and removing duplicates...</DialogDescription>
+            <DialogDescription>Identifying new resources and saving them to the database...</DialogDescription>
           </div>
         );
       case 'error':
