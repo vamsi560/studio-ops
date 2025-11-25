@@ -72,7 +72,8 @@ export default function ResourceMappingPage() {
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             const json = XLSX.utils.sheet_to_json(worksheet);
-            resolve(json);
+            // Ensure plain objects by stringifying and parsing
+            resolve(JSON.parse(JSON.stringify(json)));
           } catch (err) {
             reject(err);
           }
