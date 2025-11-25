@@ -31,8 +31,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
 
 import {
   findBestCandidateForAllRRFs,
@@ -51,16 +49,10 @@ type Stage = 'idle' | 'processing' | 'result' | 'error';
 export default function ResourceMappingPage() {
   const [stage, setStage] = useState<Stage>('idle');
   const [rrfFile, setRrfFile] = useState<File | null>(null);
+  const [benchFile, setBenchFile] = useState<File | null>(null);
   const [results, setResults] = useState<FindBestCandidateForAllRRFsOutput>([]);
   const [summary, setSummary] = useState<string>('');
   const { toast } = useToast();
-
-  const firestore = useFirestore();
-  const resourcesQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'resources') : null),
-    [firestore]
-  );
-  const { data: benchResources, isLoading: isLoadingBench } = useCollection(resourcesQuery);
 
   const handleFileChange =
     (setter: React.Dispatch<React.SetStateAction<File | null>>) =>
@@ -72,11 +64,11 @@ export default function ResourceMappingPage() {
     };
 
   const handleFindMatches = async () => {
-    if (!rrfFile || !benchResources) {
+    if (!rrfFile || !benchFile) {
         toast({
             variant: 'destructive',
             title: 'Missing Data',
-            description: 'Please upload an RRF file and ensure bench data is loaded before starting the analysis.',
+            description: 'Please upload both an RRF file and a Bench Report file before starting the analysis.',
         });
         return;
     };
@@ -104,11 +96,14 @@ export default function ResourceMappingPage() {
       });
 
     try {
-      const rrfJson = await readFileAsJson(rrfFile);
+      const [rrfJson, benchJson] = await Promise.all([
+        readFileAsJson(rrfFile),
+        readFileAsJson(benchFile)
+      ]);
       
       const apiResult = await findBestCandidateForAllRRFs({
         rrfsData: rrfJson,
-        benchData: benchResources,
+        benchData: benchJson,
       });
 
       setResults(apiResult);
@@ -128,7 +123,7 @@ export default function ResourceMappingPage() {
       toast({
         variant: 'destructive',
         title: 'AI Analysis Failed',
-        description: 'Could not perform the analysis. Please check the file and try again.',
+        description: 'Could not perform the analysis. Please check the files and try again.',
       });
     }
   };
@@ -136,6 +131,7 @@ export default function ResourceMappingPage() {
   const handleReset = () => {
     setStage('idle');
     setRrfFile(null);
+    setBenchFile(null);
     setResults([]);
     setSummary('');
   }
@@ -158,7 +154,7 @@ export default function ResourceMappingPage() {
           <CardHeader>
             <CardTitle>Bulk Candidate Analysis</CardTitle>
             <CardDescription>
-              Upload an Excel sheet of RRFs. The system will use the resource data from the database to find the most suitable candidates for each role.
+              Upload an Excel sheet of RRFs and an Excel sheet of the Bench Report. The system will analyze both to find the most suitable candidates.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -195,22 +191,35 @@ export default function ResourceMappingPage() {
                     </Label>
                 </div>
                 <div className="space-y-2">
-                  <Label>Bench Report Data</Label>
-                  <div className="flex items-center justify-center w-full h-32 border-2 border-dashed rounded-lg bg-muted/20">
-                    <div className="text-center">
-                      {isLoadingBench ? (
-                        <div className="flex items-center gap-2">
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                          <p className="text-sm text-muted-foreground">Loading from DB...</p>
-                        </div>
-                      ) : (
-                        <>
-                          <p className="font-semibold text-primary">{benchResources?.length || 0} Resources Loaded</p>
-                          <p className="text-xs text-muted-foreground">from Firestore</p>
-                        </>
-                      )}
+                    <Label htmlFor="bench-upload">Bench Report (Excel)</Label>
+                    <Label
+                    htmlFor="bench-upload"
+                    className={cn(
+                        'flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50',
+                        benchFile ? 'border-primary' : 'border-border'
+                    )}
+                    >
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                        {benchFile ? (
+                        <FileCheck2 className="w-8 h-8 mb-2 text-primary" />
+                        ) : (
+                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
+                        )}
+                        <p className="text-xs text-muted-foreground px-2">
+                        {benchFile
+                            ? benchFile.name
+                            : 'Click or drag & drop Bench file'}
+                        </p>
                     </div>
-                  </div>
+                    <Input
+                        id="bench-upload"
+                        type="file"
+                        className="hidden"
+                        onChange={handleFileChange(setBenchFile)}
+                        accept=".xlsx, .xls"
+                        disabled={stage === 'processing'}
+                    />
+                    </Label>
                 </div>
             </div>
             <div className="flex justify-end gap-2">
@@ -219,7 +228,7 @@ export default function ResourceMappingPage() {
                         Reset
                     </Button>
                 )}
-                <Button onClick={handleFindMatches} disabled={!rrfFile || isLoadingBench || stage === 'processing'}>
+                <Button onClick={handleFindMatches} disabled={!rrfFile || !benchFile || stage === 'processing'}>
                     {stage === 'processing' ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
@@ -235,7 +244,7 @@ export default function ResourceMappingPage() {
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 <h3 className="text-xl font-semibold">Performing Bulk Analysis</h3>
-                <p className="text-muted-foreground">AI is comparing all RRFs against the bench report from the database. <br/> This may take a moment...</p>
+                <p className="text-muted-foreground">AI is comparing all RRFs against the bench report. <br/> This may take a moment...</p>
             </div>
         )}
 
