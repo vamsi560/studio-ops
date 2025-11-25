@@ -49,7 +49,7 @@ const analyzeResourcesPrompt = ai.definePrompt({
 
   Consider potential slight discrepancies in resource names when comparing against previous records. Use your best judgment to determine if a resource is truly new or simply a variation of an existing record.
 
-  Here's the new Excel data (represented as a data URI): {{media url=excelDataUri}}
+  The new Excel data is provided in the 'excelDataUri' input parameter.
   Here's the list of previous resource IDs (VAMIDs): {{{previousResourceIds}}}
 
   Return ONLY a JSON object containing a \"newResourceIds\" key with an array of VAMIDs for the newly identified resources.

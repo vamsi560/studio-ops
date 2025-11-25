@@ -59,8 +59,8 @@ Your task is to analyze both documents and identify the single best candidate fr
 
 Provide a suitability score between 0 and 100 and a brief justification for your choice.
 
-RRF Data: {{media url=rrfDataUri}}
-Bench Report Data: {{media url=benchDataUri}}
+The RRF data is in the 'rrfDataUri' input parameter.
+The Bench Report data is in the 'benchDataUri' input parameter.
 
 Return ONLY a JSON object with the best candidate's details, their suitability score, and a justification.
 Example:
