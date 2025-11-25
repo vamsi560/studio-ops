@@ -15,8 +15,6 @@ import GradeDistributionChart from './dashboard/grade-distribution-chart';
 import SkillDistributionChart from './dashboard/skill-distribution-chart';
 import { Users, Briefcase, UserX, TrendingUp, Sparkles } from 'lucide-react';
 import { initiateAnonymousSignIn, useAuth } from '@/firebase';
-import { ALL_RESOURCES } from '@/lib/mock-data';
-
 
 export default function DashboardPage() {
   const [isClient, setIsClient] = useState(false);
@@ -27,31 +25,24 @@ export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const resourcesQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'resources') : null),
-    [firestore]
-  );
-  const { data: resources, isLoading: isLoadingResources } = useCollection<Resource>(resourcesQuery);
-  
   useEffect(() => {
     setIsClient(true);
     if (!isUserLoading && !user && auth) {
         initiateAnonymousSignIn(auth);
     }
   }, [isUserLoading, user, auth]);
+
+  const resourcesQuery = useMemoFirebase(
+    () => (firestore && user ? collection(firestore, 'resources') : null),
+    [firestore, user]
+  );
+  const { data: resources, isLoading: isLoadingResources } = useCollection<Resource>(resourcesQuery);
   
   const handleNewResources = (newResourcesData: Partial<Resource>[]) => {
     if (!firestore) return;
     const resourcesCollection = collection(firestore, 'resources');
     
-    // Fallback to mock data if AI fails in UploadModal
-    const dataToUpload = newResourcesData.length > 0 
-      ? newResourcesData 
-      : ALL_RESOURCES.filter(r => ['VAM1011', 'VAM1012', 'VAM1013', 'VAM1014', 'VAM1015'].includes(r.vamid));
-      
-    dataToUpload.forEach(resource => {
-      // Here you would map the parsed Excel row to your Resource object
-      // For now, assuming the objects in newResourcesData are already in the correct format
+    newResourcesData.forEach(resource => {
       addDocumentNonBlocking(resourcesCollection, resource);
     });
   };
@@ -102,7 +93,7 @@ export default function DashboardPage() {
       .slice(0, 5);
   }, [resources]);
 
-  const isLoading = isUserLoading || isLoadingResources;
+  const isLoading = isUserLoading || (user && isLoadingResources);
 
   if (!isClient || isLoading) {
     return (
