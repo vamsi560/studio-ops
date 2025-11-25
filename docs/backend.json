@@ -1,0 +1,306 @@
+{
+  "entities": {
+    "Resource": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Resource",
+      "type": "object",
+      "description": "Represents a resource managed by the BenchBoard application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the resource entity."
+        },
+        "vamId": {
+          "type": "string",
+          "description": "VAMID from the uploaded Excel file."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the resource."
+        },
+        "joiningDate": {
+          "type": "string",
+          "description": "Joining date of the resource.",
+          "format": "date-time"
+        },
+        "grade": {
+          "type": "string",
+          "description": "Grade of the resource."
+        },
+        "tsc": {
+          "type": "string",
+          "description": "TSC information for the resource."
+        },
+        "account": {
+          "type": "string",
+          "description": "Account the resource is assigned to."
+        },
+        "project": {
+          "type": "string",
+          "description": "Project the resource is working on."
+        },
+        "allocationStatus": {
+          "type": "string",
+          "description": "Allocation status of the resource."
+        },
+        "allocationStartDate": {
+          "type": "string",
+          "description": "Allocation start date.",
+          "format": "date-time"
+        },
+        "allocationEndDate": {
+          "type": "string",
+          "description": "Allocation end date.",
+          "format": "date-time"
+        },
+        "firstLevelManager": {
+          "type": "string",
+          "description": "First level manager of the resource."
+        },
+        "designation": {
+          "type": "string",
+          "description": "Designation of the resource."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the resource.",
+          "format": "email"
+        },
+        "subDept": {
+          "type": "string",
+          "description": "Sub department of the resource."
+        },
+        "relievingDate": {
+          "type": "string",
+          "description": "Relieving date of the resource.",
+          "format": "date-time"
+        },
+        "resignedOn": {
+          "type": "string",
+          "description": "Date the resource resigned.",
+          "format": "date-time"
+        },
+        "resignationStatus": {
+          "type": "string",
+          "description": "Resignation status of the resource."
+        },
+        "secondLevelManager": {
+          "type": "string",
+          "description": "Second level manager of the resource."
+        },
+        "currentSkill": {
+          "type": "string",
+          "description": "Current skill of the resource."
+        },
+        "primarySkill": {
+          "type": "string",
+          "description": "Primary skill of the resource."
+        },
+        "vamExp": {
+          "type": "number",
+          "description": "VAM experience of the resource."
+        },
+        "totalExp": {
+          "type": "number",
+          "description": "Total experience of the resource."
+        },
+        "accountSummary": {
+          "type": "string",
+          "description": "Account summary of the resource."
+        },
+        "resourcingUnit": {
+          "type": "string",
+          "description": "Resourcing unit of the resource."
+        },
+        "workspace": {
+          "type": "string",
+          "description": "Workspace of the resource."
+        }
+      },
+      "required": [
+        "id",
+        "vamId",
+        "name",
+        "joiningDate",
+        "grade",
+        "tsc",
+        "account",
+        "project",
+        "allocationStatus",
+        "allocationStartDate",
+        "allocationEndDate",
+        "firstLevelManager",
+        "designation",
+        "email",
+        "subDept",
+        "relievingDate",
+        "resignedOn",
+        "resignationStatus",
+        "secondLevelManager",
+        "currentSkill",
+        "primarySkill",
+        "vamExp",
+        "totalExp",
+        "accountSummary",
+        "resourcingUnit",
+        "workspace"
+      ]
+    },
+    "DashboardMetrics": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "DashboardMetrics",
+      "type": "object",
+      "description": "Represents the metrics displayed on the BenchBoard dashboard.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the dashboard metrics entity."
+        },
+        "benchAgeingGreen": {
+          "type": "number",
+          "description": "Number of resources in the 30-day bench ageing (green) category."
+        },
+        "benchAgeingOrange": {
+          "type": "number",
+          "description": "Number of resources in the 60-day bench ageing (orange) category."
+        },
+        "benchAgeingRed": {
+          "type": "number",
+          "description": "Number of resources in the 90-day bench ageing (red) category."
+        },
+        "skills": {
+          "type": "array",
+          "description": "List of skills present in the bench resources.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "grade": {
+          "type": "array",
+          "description": "List of grades present in the bench resources.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "internalFulfillment": {
+          "type": "number",
+          "description": "Number of internal fulfillment opportunities."
+        },
+        "clientRejections": {
+          "type": "number",
+          "description": "Number of client rejections."
+        },
+        "hiringForecasting": {
+          "type": "number",
+          "description": "Hiring forecasting number."
+        },
+        "upskillingForecasting": {
+          "type": "number",
+          "description": "Upskilling forecasting number."
+        }
+      },
+      "required": [
+        "id",
+        "benchAgeingGreen",
+        "benchAgeingOrange",
+        "benchAgeingRed",
+        "skills",
+        "grade",
+        "internalFulfillment",
+        "clientRejections",
+        "hiringForecasting",
+        "upskillingForecasting"
+      ]
+    },
+    "ExcelUpload": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ExcelUpload",
+      "type": "object",
+      "description": "Represents an uploaded Excel file.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Excel upload entity."
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "Date and time the Excel file was uploaded.",
+          "format": "date-time"
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Name of the uploaded Excel file."
+        },
+        "fileLocation": {
+          "type": "string",
+          "description": "Location where the Excel file is stored."
+        }
+      },
+      "required": [
+        "id",
+        "uploadDate",
+        "fileName",
+        "fileLocation"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/resources/{resourceId}",
+        "definition": {
+          "entityName": "Resource",
+          "schema": {
+            "$ref": "#/backend/entities/Resource"
+          },
+          "description": "Stores resource details extracted from uploaded Excel files. Includes all fields required for calculating Bench Ageing and generating dashboard metrics to ensure authorization independence and efficient querying. Denormalized for QAPs.",
+          "params": [
+            {
+              "name": "resourceId",
+              "description": "Unique identifier for the resource document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/excel_uploads/{uploadId}",
+        "definition": {
+          "entityName": "ExcelUpload",
+          "schema": {
+            "$ref": "#/backend/entities/ExcelUpload"
+          },
+          "description": "Stores metadata about uploaded Excel files, including upload date, filename, and file location.",
+          "params": [
+            {
+              "name": "uploadId",
+              "description": "Unique identifier for the Excel upload document."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/dashboard_metrics/{metricsId}",
+        "definition": {
+          "entityName": "DashboardMetrics",
+          "schema": {
+            "$ref": "#/backend/entities/DashboardMetrics"
+          },
+          "description": "Stores aggregated metrics calculated from the resource data for display on the dashboard. Uses a single document for simplified updates and retrieval.",
+          "params": [
+            {
+              "name": "metricsId",
+              "description": "Unique identifier for the dashboard metrics document."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support the BenchBoard application's requirements for managing resource data, calculating dashboard metrics, and handling Excel uploads. The structure emphasizes authorization independence and efficient data retrieval for dashboard updates.  The key design principle is to separate concerns by having the Resource data separate from the DashboardMetrics. This facilitates independent scaling and avoids unnecessary data access.\n\n1.  **Resources Collection:** The `resources` collection stores resource details extracted from uploaded Excel files. To support efficient querying and dashboard updates, the following denormalization strategies are applied:  All fields required for bench ageing calculation (e.g., `joiningDate`) are stored directly within each resource document. This avoids needing to perform complex aggregations or joins across different documents.\n\n2. **Excel Uploads Collection:** Stores metadata about each uploaded Excel file, like upload date, filename, and file location.  \n\n3.  **Dashboard Metrics Collection:** Stores aggregated metrics calculated from the resource data. A single document is used to simplify updates and retrieval for the dashboard.\n\n**Authorization Independence:**\nAuthorization is inherently simple as there are no specific user-based authorization requirements mentioned. However, if future authorization requirements arise (e.g., restricting Excel uploads to specific roles), this can be achieved by storing role information in a separate `/roles` collection and checking for role existence in security rules.\n\n**QAPs (Rules are not Filters):**\nThe segregation of resource data into a dedicated collection, separate from dashboard metrics, ensures that listing resources can be performed securely without exposing aggregated metrics or requiring filtering based on upload status or other criteria. The dashboard metrics are managed separately, allowing for controlled updates and retrieval without impacting the security of the resource data.  If any authorization requirements related to specific fields are created, then those fields will be denormalized. The main focus of the current implementation is to provide a simple and scalable data structure to the resource data and to support requirements for dashboard metrics."
+  }
+}

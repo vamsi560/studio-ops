@@ -1,0 +1,96 @@
+/**
+ * Core Philosophy: This ruleset establishes a secure, read-only environment for authenticated users.
+ * The primary goal is to protect the integrity of the BenchBoard application's data
+ * (resources, metrics, and upload history) by default, while allowing any signed-in user to
+ * view the data. All write operations (create, update, delete) are explicitly disabled across
+ * all collections, awaiting the implementation of a specific administrative or role-based
+ * access control system.
+ *
+ * Data Structure: The data is organized into three distinct, top-level collections:
+ * - /resources/{resourceId}: Contains detailed information about individual resources.
+ * - /excel_uploads/{uploadId}: Logs metadata for each file upload.
+ * - /dashboard_metrics/{metricsId}: Stores aggregated data for dashboard visualization.
+ * This flat structure promotes simplicity and performance by avoiding complex queries.
+ *
+ * Key Security Decisions:
+ * - Default Deny on Writes: All write operations are locked down (`if false;`). This is a
+ *   deliberate choice to create a secure baseline. Write access must be explicitly granted
+ *   once an authorization model (e.g., admin roles) is defined in the application.
+ * - Authenticated Read Access: All read operations (`get`, `list`) are permitted for any
+ *   user who is signed in (`request.auth != null`). This allows application clients to
+ *   fetch data for display while preventing anonymous, public access.
+ * - No User-Specific Data: The current data model does not contain user-specific collections
+ *   or ownership fields, simplifying the rules to focus on global access control.
+ *
+ * Denormalization for Authorization: This ruleset is prepared for denormalization but does
+ * not require it yet, as there are no complex authorization checks. Future updates that
+ * introduce roles or ownership should denormalize those roles/owner IDs directly onto the
+ * documents they protect to maintain simple, performant rules.
+ *
+ * Structural Segregation: The data is properly segregated into collections based on its
+ * purpose (raw resource data, upload logs, aggregated metrics). This separation ensures
+ * that queries for one type of data do not unnecessarily access another, enhancing both
+ * security and performance.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Controls access to the collection of company resources.
+     * Allows any authenticated user to read resource data but denies all write operations
+     * to protect data integrity until a proper admin role is implemented.
+     * @path /resources/{resourceId}
+     * @allow (get) An authenticated user with UID 'user_abc' reads a specific resource document.
+     * @deny (create) An authenticated user with UID 'user_abc' attempts to create a new resource document.
+     * @principle Establishes a read-only pattern for globally accessible data, securing it from unauthorized modification.
+     */
+    match /resources/{resourceId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Manages metadata for uploaded Excel files.
+     * Any signed-in user can view the history of uploads, but no user can create, modify,
+     * or delete these records through the client. This ensures the upload log is an immutable,
+     * backend-managed record.
+     * @path /excel_uploads/{uploadId}
+     * @allow (list) An authenticated user with UID 'user_abc' lists all past Excel uploads.
+     * @deny (update) An authenticated user with UID 'user_abc' attempts to change the fileName of an existing upload document.
+     * @principle Protects audit trail and metadata integrity by making the collection read-only from the client-side.
+     */
+    match /excel_uploads/{uploadId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Secures the aggregated metrics used for the main dashboard.
+     * Authenticated users are permitted to read the metrics for display purposes. All write
+     * operations are blocked to ensure that metrics can only be updated by a trusted backend process.
+     * @path /dashboard_metrics/{metricsId}
+     * @allow (get) An authenticated user with UID 'user_abc' fetches the main dashboard metrics document.
+     * @deny (delete) An authenticated user with UID 'user_abc' tries to delete the metrics document.
+     * @principle Ensures that critical, aggregated data is read-only for clients and can only be modified by a secure server environment.
+     */
+    match /dashboard_metrics/{metricsId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
