@@ -46,46 +46,19 @@ const findCandidatesPrompt = ai.definePrompt({
   output: { schema: FindBestCandidateForAllRRFsOutputSchema },
   prompt: `You are an expert HR analyst. Your task is to analyze a list of RRFs (Resource Request Forms) and a Bench Report of available employees.
 
-For EACH RRF in the provided list, you must identify the top 3-5 most suitable candidates from the Bench Report.
+For EACH RRF in the provided 'rrfsData' list, you must identify the top 3-5 most suitable candidates from the 'benchData' list.
 
 IMPORTANT: When analyzing, use only the following columns:
 - From the RRF sheet ('rrfsData'): Use 'RRF ID', 'POS Title', and 'Role'.
-- From the Bench sheet ('benchData'): Use 'Name' and 'Skill'. Match the 'Skill' from the bench sheet with the requirements in 'POS Title' and 'Role' from the RRF sheet.
+- From the Bench sheet ('benchData'): Use 'Name', 'VAMID', and 'Skill'. Match the 'Skill' from the bench sheet with the requirements in 'POS Title' and 'Role' from the RRF sheet.
 
 For each candidate matched to an RRF, provide:
 1. The candidate's name and VAMID.
 2. A suitability score from 0 to 100.
 3. A brief justification for the match, highlighting key skills and experience.
 
-Return ONLY a JSON array. Each item in the array should correspond to an RRF and contain the RRF ID and a list of the top candidates for that RRF.
-Example:
-[
-  {
-    "rrfId": "RRF-001",
-    "candidates": [
-      {
-        "candidate": { "name": "Jane Doe", "vamid": "VAM12345" },
-        "suitabilityScore": 95,
-        "justification": "Expert in React and has 5 years of experience with cloud platforms."
-      },
-      {
-        "candidate": { "name": "John Smith", "vamid": "VAM67890" },
-        "suitabilityScore": 88,
-        "justification": "Strong Java skills and has worked on similar projects."
-      }
-    ]
-  },
-  {
-    "rrfId": "RRF-002",
-    "candidates": [
-      {
-        "candidate": { "name": "Peter Jones", "vamid": "VAM11223" },
-        "suitabilityScore": 92,
-        "justification": "Specializes in DevOps and has the required certifications."
-      }
-    ]
-  }
-]`,
+Return ONLY a JSON array. Each item in the array should correspond to an RRF and contain the RRF ID and a list of the top candidates for that RRF, sorted by suitability score.
+`,
 });
 
 const findBestCandidateForAllRRFsFlow = ai.defineFlow(
