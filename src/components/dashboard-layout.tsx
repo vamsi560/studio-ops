@@ -43,10 +43,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   isActive={pathname === '/'}
                   tooltip="Dashboard"
                 >
-                  <>
+                  <a>
                     <LayoutDashboard />
                     <span>Dashboard</span>
-                  </>
+                  </a>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
@@ -57,10 +57,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                   isActive={pathname === '/resource-mapping'}
                   tooltip="Resource Mapping"
                 >
-                  <>
+                  <a>
                     <GitCompareArrows />
                     <span>Resource Mapping</span>
-                  </>
+                  </a>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
