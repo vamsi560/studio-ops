@@ -37,32 +37,32 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/" passHref legacyBehavior>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === '/'}
-                  tooltip="Dashboard"
-                >
-                  <a>
-                    <LayoutDashboard />
-                    <span>Dashboard</span>
-                  </a>
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/'}
+                tooltip="Dashboard"
+                as={Link}
+                href="/"
+              >
+                <>
+                  <LayoutDashboard />
+                  <span>Dashboard</span>
+                </>
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <Link href="/resource-mapping" passHref legacyBehavior>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === '/resource-mapping'}
-                  tooltip="Resource Mapping"
-                >
-                  <a>
-                    <GitCompareArrows />
-                    <span>Resource Mapping</span>
-                  </a>
-                </SidebarMenuButton>
-              </Link>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/resource-mapping'}
+                tooltip="Resource Mapping"
+                as={Link}
+                href="/resource-mapping"
+              >
+                <>
+                  <GitCompareArrows />
+                  <span>Resource Mapping</span>
+                </>
+              </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton
