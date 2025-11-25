@@ -4,6 +4,7 @@ import { differenceInDays } from 'date-fns';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import Header from '@/components/dashboard/header';
 import UploadModal from '@/components/dashboard/upload-modal';
+import FindCandidateModal from '@/components/dashboard/find-candidate-modal';
 import StatCard from '@/components/dashboard/stat-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ALL_RESOURCES, INITIAL_RESOURCES } from '@/lib/mock-data';
@@ -16,7 +17,8 @@ import { Users, Briefcase, UserX, TrendingUp, Sparkles } from 'lucide-react';
 export default function DashboardPage() {
   const [isClient, setIsClient] = useState(false);
   const [resources, setResources] = useState<Resource[]>(INITIAL_RESOURCES);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isFindCandidateModalOpen, setIsFindCandidateModalOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -73,7 +75,7 @@ export default function DashboardPage() {
   if (!isClient) {
     return (
        <DashboardLayout>
-        <Header onUploadClick={() => {}} />
+        <Header onUploadClick={() => {}} onFindCandidateClick={() => {}} />
         <main className="p-4 sm:p-6 lg:p-8 space-y-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
             {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-32" />)}
@@ -89,12 +91,19 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <Header onUploadClick={() => setIsModalOpen(true)} />
+      <Header 
+        onUploadClick={() => setIsUploadModalOpen(true)}
+        onFindCandidateClick={() => setIsFindCandidateModalOpen(true)}
+      />
       <UploadModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
         currentResourceIds={resources.map(r => r.vamid)}
         onNewResources={handleNewResources}
+      />
+      <FindCandidateModal
+        isOpen={isFindCandidateModalOpen}
+        onClose={() => setIsFindCandidateModalOpen(false)}
       />
       <main className="p-4 sm:p-6 lg:p-8 space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
