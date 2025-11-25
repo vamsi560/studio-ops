@@ -11,16 +11,12 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const FindBestCandidateInputSchema = z.object({
-  rrfDataUri: z
+  rrfData: z
     .string()
-    .describe(
-      "The RRF Excel file data as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
-  benchDataUri: z
+    .describe('The RRF data as a JSON string.'),
+  benchData: z
     .string()
-    .describe(
-      "The Bench Report Excel file data as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
-    ),
+    .describe('The Bench Report data as a JSON string.'),
 });
 export type FindBestCandidateInput = z.infer<typeof FindBestCandidateInputSchema>;
 
@@ -43,19 +39,7 @@ export type FindBestCandidateOutput = z.infer<typeof FindBestCandidateOutputSche
 export async function findBestCandidate(
   input: FindBestCandidateInput
 ): Promise<FindBestCandidateOutput> {
-  // AI models cannot read file contents directly.
-  // For this demo, we will return a hardcoded mock result.
-  // A real implementation would require parsing the Excel files
-  // and sending the text content to the AI.
-  return Promise.resolve({
-    candidate: {
-      name: 'Advik Reddy',
-      vamid: 'VAM1005',
-    },
-    suitabilityScore: 92,
-    justification:
-      "Advik Reddy is an ideal match. His primary skill is Python, which aligns with the core requirement of the RRF. He also has 3 years of total experience, which meets the specified criteria. His availability on the bench makes him immediately deployable.",
-  });
+  return findBestCandidateFlow(input);
 }
 
 const findCandidatePrompt = ai.definePrompt({
@@ -63,7 +47,7 @@ const findCandidatePrompt = ai.definePrompt({
   input: { schema: FindBestCandidateInputSchema },
   output: { schema: FindBestCandidateOutputSchema },
   prompt: `You are an expert HR analyst specializing in matching candidates to job requirements.
-You are given data from two Excel files:
+You are given data from two sources:
 1. An RRF (Resource Request Form) describing the requirements for a role.
 2. A Bench Report listing available employees and their skills.
 
@@ -71,8 +55,11 @@ Your task is to analyze both documents and identify the single best candidate fr
 
 Provide a suitability score between 0 and 100 and a brief justification for your choice.
 
-The RRF data is in the 'rrfDataUri' input parameter.
-The Bench Report data is in the 'benchDataUri' input parameter.
+The RRF data is:
+{{{rrfData}}}
+
+The Bench Report data is:
+{{{benchData}}}
 
 Return ONLY a JSON object with the best candidate's details, their suitability score, and a justification.
 Example:

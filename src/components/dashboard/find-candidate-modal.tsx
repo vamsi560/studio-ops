@@ -27,6 +27,7 @@ import {
 } from '@/ai/flows/find-best-candidate';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import * as XLSX from 'xlsx';
 
 type Stage = 'idle' | 'processing' | 'result' | 'error';
 
@@ -42,8 +43,6 @@ export default function FindCandidateModal({
   const [stage, setStage] = useState<Stage>('idle');
   const [rrfFile, setRrfFile] = useState<File | null>(null);
   const [benchFile, setBenchFile] = useState<File | null>(null);
-  const [rrfDataUri, setRrfDataUri] = useState<string | null>(null);
-  const [benchDataUri, setBenchDataUri] = useState<string | null>(null);
   const [result, setResult] = useState<FindBestCandidateOutput | null>(null);
   const { toast } = useToast();
 
@@ -60,8 +59,6 @@ export default function FindCandidateModal({
     setStage('idle');
     setRrfFile(null);
     setBenchFile(null);
-    setRrfDataUri(null);
-    setBenchDataUri(null);
     setResult(null);
   };
 
@@ -74,25 +71,30 @@ export default function FindCandidateModal({
     if (!rrfFile || !benchFile) return;
     setStage('processing');
 
-    const readFileAsDataUri = (file: File): Promise<string> =>
+    const readFileAsJson = (file: File): Promise<string> =>
       new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
+        reader.readAsArrayBuffer(file);
+        reader.onload = () => {
+            const data = new Uint8Array(reader.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet);
+            resolve(JSON.stringify(json, null, 2));
+        };
         reader.onerror = reject;
       });
 
     try {
-      const [rrfUri, benchUri] = await Promise.all([
-        readFileAsDataUri(rrfFile),
-        readFileAsDataUri(benchFile),
+      const [rrfJson, benchJson] = await Promise.all([
+        readFileAsJson(rrfFile),
+        readFileAsJson(benchFile),
       ]);
-      setRrfDataUri(rrfUri);
-      setBenchDataUri(benchUri);
 
       const apiResult = await findBestCandidate({
-        rrfDataUri: rrfUri,
-        benchDataUri: benchUri,
+        rrfData: rrfJson,
+        benchData: benchJson,
       });
       setResult(apiResult);
       setStage('result');
