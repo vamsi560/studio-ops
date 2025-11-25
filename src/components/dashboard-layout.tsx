@@ -4,6 +4,7 @@ import {
   Users,
   GitCompareArrows,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Sidebar,
@@ -36,24 +37,32 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <SidebarContent>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                href="/"
-                isActive={pathname === '/'}
-                tooltip="Dashboard"
-              >
-                <LayoutDashboard />
-                <span>Dashboard</span>
-              </SidebarMenuButton>
+              <Link href="/" passHref>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === '/'}
+                  tooltip="Dashboard"
+                >
+                  <>
+                    <LayoutDashboard />
+                    <span>Dashboard</span>
+                  </>
+                </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton
-                href="/resource-mapping"
-                isActive={pathname === '/resource-mapping'}
-                tooltip="Resource Mapping"
-              >
-                <GitCompareArrows />
-                <span>Resource Mapping</span>
-              </SidebarMenuButton>
+              <Link href="/resource-mapping" passHref>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === '/resource-mapping'}
+                  tooltip="Resource Mapping"
+                >
+                  <>
+                    <GitCompareArrows />
+                    <span>Resource Mapping</span>
+                  </>
+                </SidebarMenuButton>
+              </Link>
             </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton
@@ -62,8 +71,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 tooltip="Resources"
                 isDisabled
               >
-                <Users />
-                <span>Resources</span>
+                <>
+                  <Users />
+                  <span>Resources</span>
+                </>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
