@@ -81,6 +81,7 @@ export default function RrfBenchDashboardPage() {
 
       const benchCount =
         resources?.filter(r => {
+          if (!r.joiningDate) return false;
           const joiningDate = new Date(r.joiningDate);
           return joiningDate >= weekStart && joiningDate <= weekEnd;
         }).length || 0;
