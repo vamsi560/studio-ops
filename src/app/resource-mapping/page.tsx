@@ -1,15 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Loader2,
   UploadCloud,
-  FileCheck2,
   AlertTriangle,
   GitCompareArrows,
   Sparkles,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import {
+  Bar,
+  BarChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
+} from 'recharts';
+import {
+  subWeeks,
+  eachWeekOfInterval,
+  endOfWeek,
+  format
+} from 'date-fns';
+import { collection } from 'firebase/firestore';
+
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +48,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-
+import {
+  ChartContainer,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 import {
   findBestCandidateForAllRRFs,
   type FindBestCandidateForAllRRFsOutput,
@@ -41,9 +61,22 @@ import {
 } from '@/ai/flows/summarize-resource-matches';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import type { Resource } from '@/lib/types';
 
 
 type Stage = 'idle' | 'processing' | 'result' | 'error';
+
+const chartConfig = {
+  rrf: {
+    label: 'RRFs',
+    color: 'hsl(var(--chart-1))',
+  },
+  bench: {
+    label: 'Bench',
+    color: 'hsl(var(--chart-2))',
+  },
+};
 
 
 export default function ResourceMappingPage() {
@@ -53,6 +86,51 @@ export default function ResourceMappingPage() {
   const [results, setResults] = useState<FindBestCandidateForAllRRFsOutput>([]);
   const [summary, setSummary] = useState<string>('');
   const { toast } = useToast();
+
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
+  const resourcesQuery = useMemoFirebase(
+    () => (firestore && user ? collection(firestore, 'resources') : null),
+    [firestore, user]
+  );
+  const { data: resources, isLoading: isLoadingResources } =
+    useCollection<Resource>(resourcesQuery);
+
+  const weeklyData = useMemo(() => {
+    const today = new Date();
+    const last4Weeks = eachWeekOfInterval(
+      {
+        start: subWeeks(today, 3),
+        end: today,
+      },
+      { weekStartsOn: 1 } // Start week on Monday
+    );
+
+    return last4Weeks.map(weekStart => {
+      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+      const weekLabel = `${format(weekStart, 'MMM d')}`;
+
+      // This is mock data since we don't have RRF data in firestore yet
+      const rrfCount = Math.floor(Math.random() * 10) + 2;
+
+      const benchCount =
+        resources?.filter(r => {
+          if (!r.joiningDate) return false;
+          const joiningDate = new Date(r.joiningDate);
+          return joiningDate >= weekStart && joiningDate <= weekEnd;
+        }).length || 0;
+
+      return {
+        date: weekLabel,
+        rrf: rrfCount,
+        bench: benchCount,
+      };
+    });
+  }, [resources]);
+
+  const isLoading = isUserLoading || (user && isLoadingResources);
+
 
   const handleFileChange =
     (setter: React.Dispatch<React.SetStateAction<File | null>>) =>
@@ -317,6 +395,83 @@ export default function ResourceMappingPage() {
             </div>
         )}
 
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Weekly RRF vs Bench Trend</CardTitle>
+                    <CardDescription>
+                    Comparison of incoming RRFs versus new additions to the bench over the last 4 weeks.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                    <Skeleton className="h-[300px] w-full" />
+                    ) : (
+                    <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                        <ResponsiveContainer>
+                        <BarChart data={weeklyData}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                            dataKey="date"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            />
+                            <YAxis />
+                            <Tooltip content={<ChartTooltipContent />} />
+                            <Legend />
+                            <Bar
+                            dataKey="rrf"
+                            fill={chartConfig.rrf.color}
+                            radius={4}
+                            />
+                            <Bar
+                            dataKey="bench"
+                            fill={chartConfig.bench.color}
+                            radius={4}
+                            />
+                        </BarChart>
+                        </ResponsiveContainer>
+                    </ChartContainer>
+                    )}
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Weekly Bench Additions</CardTitle>
+                    <CardDescription>
+                    Number of resources added to the bench each week for the last 4 weeks.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                    <Skeleton className="h-[300px] w-full" />
+                    ) : (
+                    <ChartContainer config={{bench: chartConfig.bench}} className="h-[300px] w-full">
+                        <ResponsiveContainer>
+                        <BarChart data={weeklyData}>
+                            <CartesianGrid vertical={false} />
+                            <XAxis
+                            dataKey="date"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            />
+                            <YAxis />
+                            <Tooltip content={<ChartTooltipContent />} />
+                            <Legend />
+                            <Bar
+                            dataKey="bench"
+                            fill={chartConfig.bench.color}
+                            radius={4}
+                            />
+                        </BarChart>
+                        </ResponsiveContainer>
+                    </ChartContainer>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
       </main>
     </DashboardLayout>
   );

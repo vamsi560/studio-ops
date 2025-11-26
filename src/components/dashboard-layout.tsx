@@ -65,20 +65,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === '/rrf-bench-dashboard'}
-                tooltip="RRF vs Bench"
-                as={Link}
-                href="/rrf-bench-dashboard"
-              >
-                <>
-                  <AreaChart />
-                  <span>RRF vs Bench</span>
-                </>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton
                 href="#"
