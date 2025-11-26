@@ -139,6 +139,7 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
                         if (appField === 'Grade') resource.grade = row[excelCol];
                         if (appField === 'Primary Skill') resource.primarySkill = row[excelCol];
                         if (appField === 'Current Skill') resource.currentSkill = row[excelCol];
+                        if (appField === 'Total Exp') resource.totalExp = Number(row[excelCol]);
                     }
                 }
                 return resource;
@@ -267,5 +268,3 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
     </Dialog>
   );
 }
-
-    
