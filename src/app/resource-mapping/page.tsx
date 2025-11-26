@@ -19,12 +19,7 @@ import {
   CartesianGrid,
   Legend,
 } from 'recharts';
-import {
-  subWeeks,
-  eachWeekOfInterval,
-  endOfWeek,
-  format
-} from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import { collection } from 'firebase/firestore';
 
 import { useToast } from '@/hooks/use-toast';
@@ -62,19 +57,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import type { Resource } from '@/lib/types';
+import type { Resource, BenchAgeingData } from '@/lib/types';
 
 
 type Stage = 'idle' | 'processing' | 'result' | 'error';
 
 const chartConfig = {
-  rrf: {
-    label: 'RRFs',
+  resources: {
+    label: 'Resources',
     color: 'hsl(var(--chart-1))',
-  },
-  bench: {
-    label: 'Bench',
-    color: 'hsl(var(--chart-2))',
   },
 };
 
@@ -96,44 +87,27 @@ export default function ResourceMappingPage() {
   const { data: resources, isLoading: isLoadingResources } =
     useCollection<Resource>(resourcesQuery);
 
-  const weeklyData = useMemo(() => {
-    if (!resources) {
-        return Array(4).fill({ date: '', rrf: 0, bench: 0 });
-    }
+  const benchAgeingDataForChart = useMemo(() => {
     const today = new Date();
-    const last4Weeks = eachWeekOfInterval(
-      {
-        start: subWeeks(today, 3),
-        end: today,
-      },
-      { weekStartsOn: 1 } // Start week on Monday
-    );
-
-    return last4Weeks.map(weekStart => {
-      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-      const weekLabel = `${format(weekStart, 'MMM d')}`;
-
-      // This is mock data since we don't have RRF data in firestore yet
-      const rrfCount = Math.floor(Math.random() * 10) + 2;
-
-      const benchCount =
-        resources.filter(r => {
-          if (!r.joiningDate) return false;
-          // Ensure joiningDate is a valid date string before creating a Date object
-          try {
-            const joiningDate = new Date(r.joiningDate);
-            return joiningDate >= weekStart && joiningDate <= weekEnd;
-          } catch (e) {
-            return false;
-          }
-        }).length;
-
-      return {
-        date: weekLabel,
-        rrf: rrfCount,
-        bench: benchCount,
-      };
+    const data: BenchAgeingData = { '0-30': 0, '31-60': 0, '61-90': 0, more_than_90: 0 };
+    (resources || []).forEach(resource => {
+      if (!resource.joiningDate) return;
+       try {
+        const daysOnBench = differenceInDays(today, new Date(resource.joiningDate));
+        if (daysOnBench <= 30) data['0-30']++;
+        else if (daysOnBench <= 60) data['31-60']++;
+        else if (daysOnBench <= 90) data['61-90']++;
+        else data.more_than_90++;
+       } catch (e) {
+        console.error("Invalid date for resource:", resource.vamid, resource.joiningDate);
+       }
     });
+    return [
+        { name: '0-30 Days', resources: data['0-30'] },
+        { name: '31-60 Days', resources: data['31-60'] },
+        { name: '61-90 Days', resources: data['61-90'] },
+        { name: '> 90 Days', resources: data.more_than_90 },
+    ];
   }, [resources]);
 
   const isLoading = isUserLoading || isLoadingResources;
@@ -387,83 +361,40 @@ export default function ResourceMappingPage() {
             </div>
         )}
 
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Weekly RRF vs Bench Trend</CardTitle>
-                    <CardDescription>
-                    Comparison of incoming RRFs versus new additions to the bench over the last 4 weeks.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {isLoading ? (
-                    <Skeleton className="h-[300px] w-full" />
-                    ) : (
-                    <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                        <ResponsiveContainer>
-                        <BarChart data={weeklyData}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis
-                            dataKey="date"
-                            tickLine={false}
-                            tickMargin={10}
-                            axisLine={false}
-                            />
-                            <YAxis />
-                            <Tooltip content={<ChartTooltipContent />} />
-                            <Legend />
-                            <Bar
-                            dataKey="rrf"
-                            fill={chartConfig.rrf.color}
-                            radius={4}
-                            />
-                            <Bar
-                            dataKey="bench"
-                            fill={chartConfig.bench.color}
-                            radius={4}
-                            />
-                        </BarChart>
-                        </ResponsiveContainer>
-                    </ChartContainer>
-                    )}
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Weekly Bench Additions</CardTitle>
-                    <CardDescription>
-                    Number of resources added to the bench each week for the last 4 weeks.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {isLoading ? (
-                    <Skeleton className="h-[300px] w-full" />
-                    ) : (
-                    <ChartContainer config={{bench: chartConfig.bench}} className="h-[300px] w-full">
-                        <ResponsiveContainer>
-                        <BarChart data={weeklyData}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis
-                            dataKey="date"
-                            tickLine={false}
-                            tickMargin={10}
-                            axisLine={false}
-                            />
-                            <YAxis />
-                            <Tooltip content={<ChartTooltipContent />} />
-                            <Legend />
-                            <Bar
-                            dataKey="bench"
-                            fill={chartConfig.bench.color}
-                            radius={4}
-                            />
-                        </BarChart>
-                        </ResponsiveContainer>
-                    </ChartContainer>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Bench Ageing Distribution</CardTitle>
+                <CardDescription>
+                Number of resources on the bench based on how long they have been available.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                <Skeleton className="h-[300px] w-full" />
+                ) : (
+                <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                    <ResponsiveContainer>
+                    <BarChart data={benchAgeingDataForChart} margin={{ top: 20, right: 20, bottom: 20, left: -10 }}>
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                        dataKey="name"
+                        tickLine={false}
+                        tickMargin={10}
+                        axisLine={false}
+                        />
+                        <YAxis />
+                        <Tooltip content={<ChartTooltipContent />} />
+                        <Bar
+                        dataKey="resources"
+                        fill={chartConfig.resources.color}
+                        radius={4}
+                        />
+                    </BarChart>
+                    </ResponsiveContainer>
+                </ChartContainer>
+                )}
+            </CardContent>
+        </Card>
       </main>
     </DashboardLayout>
   );
