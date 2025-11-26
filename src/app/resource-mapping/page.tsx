@@ -164,26 +164,19 @@ export default function ResourceMappingPage() {
       </header>
       <main className="p-4 sm:p-6 lg:p-8 space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Bulk Candidate Analysis</CardTitle>
-            <CardDescription>
-              Upload an Excel sheet of RRFs and an Excel sheet of the Bench Report. The system will analyze both to find the most suitable candidates.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div className="space-y-2">
-                  <Label htmlFor="rrf-upload">RRFs Sheet (Excel)</Label>
-                  <div className="flex items-center gap-2">
-                    <Button asChild variant="outline" className="cursor-pointer">
-                      <Label htmlFor="rrf-upload" className="cursor-pointer flex items-center">
-                          <UploadCloud className="mr-2 h-4 w-4" />
-                          Upload RRF File
-                      </Label>
-                    </Button>
-                    {rrfFile && <p className="text-sm text-muted-foreground">{rrfFile.name}</p>}
-                  </div>
-                  <Input
+          <CardContent className="p-4">
+             <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Button asChild variant="outline" className="cursor-pointer">
+                    <Label htmlFor="rrf-upload" className="cursor-pointer flex items-center">
+                      <UploadCloud className="mr-2 h-4 w-4" />
+                      Upload RRF File
+                    </Label>
+                  </Button>
+                  {rrfFile && <p className="text-sm text-muted-foreground">{rrfFile.name}</p>}
+                </div>
+                 <Input
                     id="rrf-upload"
                     type="file"
                     className="hidden"
@@ -191,19 +184,16 @@ export default function ResourceMappingPage() {
                     accept=".xlsx, .xls"
                     disabled={stage === 'processing'}
                   />
+                <div className="flex items-center gap-2">
+                  <Button asChild variant="outline" className="cursor-pointer">
+                    <Label htmlFor="bench-upload" className="cursor-pointer flex items-center">
+                      <UploadCloud className="mr-2 h-4 w-4" />
+                      Upload Bench File
+                    </Label>
+                  </Button>
+                  {benchFile && <p className="text-sm text-muted-foreground">{benchFile.name}</p>}
                 </div>
-                <div className="space-y-2">
-                   <Label htmlFor="bench-upload">Bench Report (Excel)</Label>
-                   <div className="flex items-center gap-2">
-                    <Button asChild variant="outline" className="cursor-pointer">
-                      <Label htmlFor="bench-upload" className="cursor-pointer flex items-center">
-                          <UploadCloud className="mr-2 h-4 w-4" />
-                          Upload Bench File
-                      </Label>
-                    </Button>
-                    {benchFile && <p className="text-sm text-muted-foreground">{benchFile.name}</p>}
-                   </div>
-                  <Input
+                 <Input
                     id="bench-upload"
                     type="file"
                     className="hidden"
@@ -211,22 +201,23 @@ export default function ResourceMappingPage() {
                     accept=".xlsx, .xls"
                     disabled={stage === 'processing'}
                   />
-                </div>
-            </div>
-            <div className="flex justify-end gap-2">
-                {stage !== 'idle' && (
-                    <Button variant="outline" onClick={handleReset} disabled={stage === 'processing'}>
-                        Reset
-                    </Button>
-                )}
-                <Button onClick={handleFindMatches} disabled={!rrfFile || !benchFile || stage === 'processing'}>
-                    {stage === 'processing' ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <GitCompareArrows className="mr-2 h-4 w-4" />
-                    )}
-                    Find All Matches
-                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                  {stage !== 'idle' && (
+                      <Button variant="outline" onClick={handleReset} disabled={stage === 'processing'}>
+                          Reset
+                      </Button>
+                  )}
+                  <Button onClick={handleFindMatches} disabled={!rrfFile || !benchFile || stage === 'processing'}>
+                      {stage === 'processing' ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                          <GitCompareArrows className="mr-2 h-4 w-4" />
+                      )}
+                      Find All Matches
+                  </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
