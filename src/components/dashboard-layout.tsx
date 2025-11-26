@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Users,
   GitCompareArrows,
+  AreaChart,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -61,6 +62,20 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <>
                   <GitCompareArrows />
                   <span>Resource Mapping</span>
+                </>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === '/rrf-bench-dashboard'}
+                tooltip="RRF vs Bench"
+                as={Link}
+                href="/rrf-bench-dashboard"
+              >
+                <>
+                  <AreaChart />
+                  <span>RRF vs Bench</span>
                 </>
               </SidebarMenuButton>
             </SidebarMenuItem>

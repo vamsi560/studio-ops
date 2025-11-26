@@ -173,66 +173,44 @@ export default function ResourceMappingPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="space-y-2">
-                    <Label htmlFor="rrf-upload">RRFs Sheet (Excel)</Label>
-                    <Label
-                    htmlFor="rrf-upload"
-                    className={cn(
-                        'flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50',
-                        rrfFile ? 'border-primary' : 'border-border'
-                    )}
-                    >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
-                        {rrfFile ? (
-                        <FileCheck2 className="w-8 h-8 mb-2 text-primary" />
-                        ) : (
-                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                        )}
-                        <p className="text-xs text-muted-foreground px-2">
-                        {rrfFile
-                            ? rrfFile.name
-                            : 'Click or drag & drop RRFs file'}
-                        </p>
-                    </div>
-                    <Input
-                        id="rrf-upload"
-                        type="file"
-                        className="hidden"
-                        onChange={handleFileChange(setRrfFile)}
-                        accept=".xlsx, .xls"
-                        disabled={stage === 'processing'}
-                    />
-                    </Label>
+                  <Label htmlFor="rrf-upload">RRFs Sheet (Excel)</Label>
+                  <div className="flex items-center gap-2">
+                    <Button asChild variant="outline" className="cursor-pointer">
+                      <Label htmlFor="rrf-upload" className="cursor-pointer flex items-center">
+                          <UploadCloud className="mr-2 h-4 w-4" />
+                          Upload RRF File
+                      </Label>
+                    </Button>
+                    {rrfFile && <p className="text-sm text-muted-foreground">{rrfFile.name}</p>}
+                  </div>
+                  <Input
+                    id="rrf-upload"
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange(setRrfFile)}
+                    accept=".xlsx, .xls"
+                    disabled={stage === 'processing'}
+                  />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="bench-upload">Bench Report (Excel)</Label>
-                    <Label
-                    htmlFor="bench-upload"
-                    className={cn(
-                        'flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50',
-                        benchFile ? 'border-primary' : 'border-border'
-                    )}
-                    >
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center">
-                        {benchFile ? (
-                        <FileCheck2 className="w-8 h-8 mb-2 text-primary" />
-                        ) : (
-                        <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                        )}
-                        <p className="text-xs text-muted-foreground px-2">
-                        {benchFile
-                            ? benchFile.name
-                            : 'Click or drag & drop Bench file'}
-                        </p>
-                    </div>
-                    <Input
-                        id="bench-upload"
-                        type="file"
-                        className="hidden"
-                        onChange={handleFileChange(setBenchFile)}
-                        accept=".xlsx, .xls"
-                        disabled={stage === 'processing'}
-                    />
-                    </Label>
+                   <Label htmlFor="bench-upload">Bench Report (Excel)</Label>
+                   <div className="flex items-center gap-2">
+                    <Button asChild variant="outline" className="cursor-pointer">
+                      <Label htmlFor="bench-upload" className="cursor-pointer flex items-center">
+                          <UploadCloud className="mr-2 h-4 w-4" />
+                          Upload Bench File
+                      </Label>
+                    </Button>
+                    {benchFile && <p className="text-sm text-muted-foreground">{benchFile.name}</p>}
+                   </div>
+                  <Input
+                    id="bench-upload"
+                    type="file"
+                    className="hidden"
+                    onChange={handleFileChange(setBenchFile)}
+                    accept=".xlsx, .xls"
+                    disabled={stage === 'processing'}
+                  />
                 </div>
             </div>
             <div className="flex justify-end gap-2">
