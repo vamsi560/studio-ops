@@ -82,7 +82,6 @@ const chartConfig = {
 export default function ResourceMappingPage() {
   const [stage, setStage] = useState<Stage>('idle');
   const [rrfFile, setRrfFile] = useState<File | null>(null);
-  const [benchFile, setBenchFile] = useState<File | null>(null);
   const [results, setResults] = useState<FindBestCandidateForAllRRFsOutput>([]);
   const [summary, setSummary] = useState<string>('');
   const { toast } = useToast();
@@ -98,6 +97,9 @@ export default function ResourceMappingPage() {
     useCollection<Resource>(resourcesQuery);
 
   const weeklyData = useMemo(() => {
+    if (!resources) {
+        return Array(4).fill({ date: '', rrf: 0, bench: 0 });
+    }
     const today = new Date();
     const last4Weeks = eachWeekOfInterval(
       {
@@ -115,11 +117,16 @@ export default function ResourceMappingPage() {
       const rrfCount = Math.floor(Math.random() * 10) + 2;
 
       const benchCount =
-        resources?.filter(r => {
+        resources.filter(r => {
           if (!r.joiningDate) return false;
-          const joiningDate = new Date(r.joiningDate);
-          return joiningDate >= weekStart && joiningDate <= weekEnd;
-        }).length || 0;
+          // Ensure joiningDate is a valid date string before creating a Date object
+          try {
+            const joiningDate = new Date(r.joiningDate);
+            return joiningDate >= weekStart && joiningDate <= weekEnd;
+          } catch (e) {
+            return false;
+          }
+        }).length;
 
       return {
         date: weekLabel,
@@ -129,27 +136,34 @@ export default function ResourceMappingPage() {
     });
   }, [resources]);
 
-  const isLoading = isUserLoading || (user && isLoadingResources);
+  const isLoading = isUserLoading || isLoadingResources;
 
 
-  const handleFileChange =
-    (setter: React.Dispatch<React.SetStateAction<File | null>>) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const selectedFile = e.target.files?.[0];
       if (selectedFile) {
-        setter(selectedFile);
+        setRrfFile(selectedFile);
       }
     };
 
   const handleFindMatches = async () => {
-    if (!rrfFile || !benchFile) {
+    if (!rrfFile) {
         toast({
             variant: 'destructive',
-            title: 'Missing Data',
-            description: 'Please upload both an RRF file and a Bench Report file before starting the analysis.',
+            title: 'Missing RRF File',
+            description: 'Please upload an RRF file before starting the analysis.',
         });
         return;
     };
+     if (!resources || resources.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'No Bench Data',
+            description: 'There is no bench data in the database. Please upload a resource sheet on the main dashboard first.',
+        });
+        return;
+    }
+
     setStage('processing');
     setSummary('');
 
@@ -164,7 +178,6 @@ export default function ResourceMappingPage() {
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             const json = XLSX.utils.sheet_to_json(worksheet);
-            // Ensure plain objects by stringifying and parsing
             resolve(JSON.parse(JSON.stringify(json)));
           } catch (err) {
             reject(err);
@@ -174,10 +187,7 @@ export default function ResourceMappingPage() {
       });
 
     try {
-      const [rrfJson, benchJson] = await Promise.all([
-        readFileAsJson(rrfFile),
-        readFileAsJson(benchFile)
-      ]);
+      const rrfJson = await readFileAsJson(rrfFile);
 
       // Pre-process data to only send necessary columns to the AI
       const relevantRrfData = rrfJson.map(rrf => ({
@@ -186,10 +196,10 @@ export default function ResourceMappingPage() {
         "Role": rrf["Role"],
       }));
 
-      const relevantBenchData = benchJson.map(bench => ({
-          "Name": bench["Name"],
-          "VAMID": bench["VAMID"],
-          "Skill": bench["Skill"],
+      const relevantBenchData = resources.map(bench => ({
+          "Name": bench.name,
+          "VAMID": bench.vamid,
+          "Skill": bench.primarySkill, // Using primarySkill as the key skill
       }));
       
       const apiResult = await findBestCandidateForAllRRFs({
@@ -214,7 +224,7 @@ export default function ResourceMappingPage() {
       toast({
         variant: 'destructive',
         title: 'AI Analysis Failed',
-        description: 'Could not perform the analysis. Please check the files and try again.',
+        description: 'Could not perform the analysis. Please check the file and try again.',
       });
     }
   };
@@ -222,7 +232,6 @@ export default function ResourceMappingPage() {
   const handleReset = () => {
     setStage('idle');
     setRrfFile(null);
-    setBenchFile(null);
     setResults([]);
     setSummary('');
   }
@@ -258,24 +267,7 @@ export default function ResourceMappingPage() {
                     id="rrf-upload"
                     type="file"
                     className="hidden"
-                    onChange={handleFileChange(setRrfFile)}
-                    accept=".xlsx, .xls"
-                    disabled={stage === 'processing'}
-                  />
-                <div className="flex items-center gap-2">
-                  <Button asChild variant="outline" className="cursor-pointer">
-                    <Label htmlFor="bench-upload" className="cursor-pointer flex items-center">
-                      <UploadCloud className="mr-2 h-4 w-4" />
-                      Upload Bench File
-                    </Label>
-                  </Button>
-                  {benchFile && <p className="text-sm text-muted-foreground">{benchFile.name}</p>}
-                </div>
-                 <Input
-                    id="bench-upload"
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileChange(setBenchFile)}
+                    onChange={handleFileChange}
                     accept=".xlsx, .xls"
                     disabled={stage === 'processing'}
                   />
@@ -287,7 +279,7 @@ export default function ResourceMappingPage() {
                           Reset
                       </Button>
                   )}
-                  <Button onClick={handleFindMatches} disabled={!rrfFile || !benchFile || stage === 'processing'}>
+                  <Button onClick={handleFindMatches} disabled={!rrfFile || stage === 'processing'}>
                       {stage === 'processing' ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       ) : (
@@ -304,7 +296,7 @@ export default function ResourceMappingPage() {
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 <h3 className="text-xl font-semibold">Performing Bulk Analysis</h3>
-                <p className="text-muted-foreground">AI is comparing all RRFs against the bench report. <br/> This may take a moment...</p>
+                <p className="text-muted-foreground">AI is comparing all RRFs against the bench report from the database. <br/> This may take a moment...</p>
             </div>
         )}
 
@@ -312,7 +304,7 @@ export default function ResourceMappingPage() {
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
                 <AlertTriangle className="h-12 w-12 text-destructive" />
                 <h3 className="text-xl font-semibold">An Error Occurred</h3>
-                <p className="text-muted-foreground">Something went wrong. Please check your files and try again.</p>
+                <p className="text-muted-foreground">Something went wrong. Please check your file and try again.</p>
             </div>
         )}
         
@@ -391,7 +383,7 @@ export default function ResourceMappingPage() {
         {stage === 'result' && results.length === 0 && (
              <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
                 <h3 className="text-xl font-semibold">No Matches Found</h3>
-                <p className="text-muted-foreground">The AI could not find any suitable matches in the provided files.</p>
+                <p className="text-muted-foreground">The AI could not find any suitable matches for the provided RRF file against the bench data in the database.</p>
             </div>
         )}
 

@@ -12,8 +12,8 @@ import { z } from 'genkit';
 
 // Input: RRFs and Bench data as structured objects
 const FindBestCandidateForAllRRFsInputSchema = z.object({
-  rrfsData: z.array(z.any()).describe('An array of RRF objects.'),
-  benchData: z.array(z.any()).describe('An array of available bench resources.'),
+  rrfsData: z.array(z.any()).describe('An array of RRF objects with "RRF ID", "POS Title", and "Role" keys.'),
+  benchData: z.array(z.any()).describe('An array of available bench resources with "Name", "VAMID", and "Skill" keys.'),
 });
 export type FindBestCandidateForAllRRFsInput = z.infer<typeof FindBestCandidateForAllRRFsInputSchema>;
 
