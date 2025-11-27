@@ -117,13 +117,8 @@ export default function ResourceMappingPage() {
       const benchCount =
         resources?.filter(r => {
           if (!r.joiningDate) return false;
-          try {
-            const joiningDate = new Date(r.joiningDate);
-            return joiningDate >= weekStart && joiningDate <= weekEnd;
-          } catch(e) {
-             console.error("Invalid date for resource:", r.vamid, r.joiningDate);
-             return false;
-          }
+          const joiningDate = new Date(r.joiningDate);
+          return joiningDate >= weekStart && joiningDate <= weekEnd;
         }).length || 0;
 
       return {
