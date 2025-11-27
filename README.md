@@ -16,14 +16,18 @@ This is a NextJS starter in Firebase Studio.
    npm install
    ```
 
-2. **Set up Google AI API key:**
+2. **Set up Google AI API key (optional for local development):**
    
-   Open `src/ai/genkit.ts` and replace `YOUR_GOOGLE_AI_API_KEY_HERE` with your actual Google AI API key:
-   ```typescript
-   const GOOGLE_GENAI_API_KEY = 'your_actual_api_key_here';
-   ```
+   The app uses the `GOOGLE_GENAI_API_KEY` environment variable. For local development, you can:
    
-   **Note:** The API key is currently hardcoded for development purposes. All keys are hardcoded and ready for Vercel deployment.
+   - Create a `.env.local` file in the root directory:
+     ```bash
+     GOOGLE_GENAI_API_KEY=your_google_ai_api_key_here
+     ```
+   
+   - Or use the hardcoded fallback in `src/ai/genkit.ts` (already configured)
+   
+   **Note:** In Vercel, the API key is set as an environment variable. For local dev, you can use `.env.local` or the hardcoded fallback.
 
 ### Running the Application
 
@@ -79,9 +83,9 @@ This project is configured for deployment to Vercel with all API keys hardcoded.
 
 ### Prerequisites for Deployment
 
-- All keys are already hardcoded:
-  - ✅ Firebase configuration: `src/firebase/config.ts`
-  - ✅ Google AI API key: `src/ai/genkit.ts`
+- Environment variables configured in Vercel:
+  - ✅ `GOOGLE_GENAI_API_KEY` - Set in Vercel project settings
+- Firebase configuration is hardcoded in `src/firebase/config.ts`
 
 ### Deployment Steps
 
@@ -92,14 +96,24 @@ This project is configured for deployment to Vercel with all API keys hardcoded.
    git push origin main
    ```
 
-2. **Deploy to Vercel:**
+2. **Configure Environment Variables in Vercel:**
+   
+   - Go to your project settings in Vercel Dashboard
+   - Navigate to "Environment Variables"
+   - Add the following variable:
+     - Name: `GOOGLE_GENAI_API_KEY`
+     - Value: Your Google AI API key
+     - Environment: Production, Preview, and Development (select all)
+
+3. **Deploy to Vercel:**
    
    **Option A: Via Vercel Dashboard**
    - Go to [vercel.com](https://vercel.com) and sign in
-   - Click "Add New Project"
+   - Click "Add New Project" (or open existing project)
    - Import your GitHub repository
    - Vercel will automatically detect Next.js
-   - Click "Deploy" (no environment variables needed - all keys are hardcoded)
+   - Make sure environment variables are set (see step 2)
+   - Click "Deploy"
 
    **Option B: Via Vercel CLI**
    ```bash
@@ -115,10 +129,11 @@ This project is configured for deployment to Vercel with all API keys hardcoded.
 
 ### Important Notes
 
-- ✅ All API keys are hardcoded in the source code
-- ✅ No environment variables need to be configured in Vercel
+- ✅ `GOOGLE_GENAI_API_KEY` must be set as an environment variable in Vercel
+- ✅ Firebase configuration is hardcoded in `src/firebase/config.ts`
 - ✅ The build script has been optimized for Vercel
-- ✅ Firebase and Genkit configurations are ready for production
+- ✅ For local development, use `.env.local` or the hardcoded fallback
+- ✅ Code reads from environment variables first, then falls back to hardcoded value
 
 ### Configuration Files
 
