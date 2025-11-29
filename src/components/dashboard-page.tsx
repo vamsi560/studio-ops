@@ -7,7 +7,7 @@ import UploadModal from '@/components/dashboard/upload-modal';
 import FindCandidateModal from '@/components/dashboard/find-candidate-modal';
 import StatCard from '@/components/dashboard/stat-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection } from 'firebase/firestore';
+import { collection, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, useUser } from '@/firebase';
 import type { Resource, BenchAgeingData } from '@/lib/types';
 import BenchAgeing from './dashboard/bench-ageing';
@@ -29,10 +29,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setIsClient(true);
-    if (!isUserLoading && !user && auth) {
+    if (auth && !isUserLoading && !user) {
         initiateAnonymousSignIn(auth);
     }
-  }, [isUserLoading, user, auth]);
+  }, [auth, isUserLoading, user]);
 
   const resourcesQuery = useMemoFirebase(
     () => (firestore && user ? collection(firestore, 'resources') : null),
@@ -45,11 +45,7 @@ export default function DashboardPage() {
     const resourcesCollection = collection(firestore, 'resources');
     
     newResourcesData.forEach(resource => {
-      // Check if VAMID already exists before adding
-      const existing = (resources || []).find(r => r.vamid === resource.vamid);
-      if (!existing) {
-        addDocumentNonBlocking(resourcesCollection, resource);
-      }
+      addDocumentNonBlocking(resourcesCollection, resource);
     });
   };
   
@@ -85,7 +81,7 @@ export default function DashboardPage() {
       }
     });
 
-    const topSkillName = Object.keys(skills).reduce((a, b) => skills[a] > skills[b] ? a : b, 'N/A');
+    const topSkillName = Object.keys(skills).length > 0 ? Object.keys(skills).reduce((a, b) => skills[a] > skills[b] ? a : b) : 'N/A';
 
     return { 
       benchAgeingData: data, 
@@ -156,7 +152,7 @@ export default function DashboardPage() {
       <UploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        currentResourceIds={(resources || []).map(r => r.vamid)}
+        currentResourceIds={(resources || []).map(r => r.vamid).filter(Boolean)}
         onNewResources={handleNewResources}
       />
       <FindCandidateModal

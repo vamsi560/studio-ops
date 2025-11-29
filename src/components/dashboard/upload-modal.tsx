@@ -117,40 +117,53 @@ export default function UploadModal({ isOpen, onClose, currentResourceIds, onNew
         const appFieldToExcelColumn = Object.fromEntries(
             Object.entries(mappings).map(([appField, excelCol]) => [appField, excelCol])
         );
-
+        
         const newResources: Partial<Resource>[] = excelData
             .map(row => {
                 const resource: Partial<Resource> = {};
                 for (const appField of APP_DATA_FIELDS) {
                     const excelCol = appFieldToExcelColumn[appField];
-                    if (excelCol && row[excelCol]) {
+                    if (excelCol && row[excelCol] !== undefined) {
+                        const value = row[excelCol];
                         // A bit of type conversion and mapping logic
-                        if (appField === 'VAMID') resource.vamid = String(row[excelCol]);
-                        if (appField === 'Name') resource.name = row[excelCol];
+                        if (appField === 'VAMID') resource.vamid = String(value);
+                        if (appField === 'Name') resource.name = String(value);
                         if (appField === 'Joining Date') {
-                            // Excel dates can be tricky, this is a basic conversion
-                            if (typeof row[excelCol] === 'number') {
-                                const date = XLSX.SSF.parse_date_code(row[excelCol]);
+                            if (typeof value === 'number') {
+                                const date = XLSX.SSF.parse_date_code(value);
                                 resource.joiningDate = new Date(date.y, date.m - 1, date.d).toISOString().split('T')[0];
-                            } else {
-                                resource.joiningDate = new Date(row[excelCol]).toISOString().split('T')[0];
+                            } else if (typeof value === 'string') {
+                                const parsedDate = new Date(value);
+                                if (!isNaN(parsedDate.getTime())) {
+                                   resource.joiningDate = parsedDate.toISOString().split('T')[0];
+                                }
                             }
                         }
-                        if (appField === 'Grade') resource.grade = row[excelCol];
-                        if (appField === 'Primary Skill') resource.primarySkill = row[excelCol];
-                        if (appField === 'Current Skill') resource.currentSkill = row[excelCol];
-                        if (appField === 'Total Exp') resource.totalExp = Number(row[excelCol]);
+                        if (appField === 'Grade') resource.grade = String(value);
+                        if (appField === 'Primary Skill') resource.primarySkill = String(value);
+                        if (appField === 'Current Skill') resource.currentSkill = String(value);
+                        if (appField === 'Total Exp') {
+                            const exp = Number(value);
+                            if (!isNaN(exp)) resource.totalExp = exp;
+                        }
                     }
                 }
                 return resource;
             })
             .filter(r => r.vamid && !currentResourceIds.includes(r.vamid));
 
-      onNewResources(newResources);
-      toast({
-        title: 'Upload Successful',
-        description: `${newResources.length} new resources have been added to the database.`,
-      });
+      if (newResources.length > 0) {
+        onNewResources(newResources);
+        toast({
+          title: 'Upload Successful',
+          description: `${newResources.length} new resources have been added to the database.`,
+        });
+      } else {
+         toast({
+          title: 'No New Resources',
+          description: `All resources in the file already exist in the database.`,
+        });
+      }
       handleClose();
     } catch (error) {
       console.error('File processing failed:', error);
