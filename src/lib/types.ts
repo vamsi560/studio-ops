@@ -1,4 +1,5 @@
 export interface Resource {
+  id?: string;
   vamid: string;
   name: string;
   joiningDate: string; // YYYY-MM-DD

@@ -67,15 +67,16 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
              <SidebarMenuItem>
               <SidebarMenuButton
-                href="#"
+                asChild
+                href="/resources"
                 isActive={pathname === '/resources'}
                 tooltip="Resources"
-                isDisabled
+                as={Link}
               >
-                
+                <>
                   <Users />
                   <span>Resources</span>
-                
+                </>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

@@ -15,12 +15,14 @@ import GradeDistributionChart from './dashboard/grade-distribution-chart';
 import SkillDistributionChart from './dashboard/skill-distribution-chart';
 import { Users, Briefcase, UserX, TrendingUp, Sparkles } from 'lucide-react';
 import { initiateAnonymousSignIn, useAuth } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const [isClient, setIsClient] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isFindCandidateModalOpen, setIsFindCandidateModalOpen] = useState(false);
   
+  const router = useRouter();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -131,7 +133,12 @@ export default function DashboardPage() {
       />
       <main className="p-4 sm:p-6 lg:p-8 space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-          <StatCard icon={Users} title="Total Bench" value={resources?.length || 0} />
+          <StatCard 
+            icon={Users} 
+            title="Total Bench" 
+            value={resources?.length || 0}
+            onClick={() => router.push('/resources')}
+            />
           <StatCard icon={Briefcase} title="Internal Fulfilment" value="8" description="+2 this month" />
           <StatCard icon={UserX} title="Client Rejections" value="3" />
           <StatCard icon={TrendingUp} title="Hiring Forecast" value="12" />
