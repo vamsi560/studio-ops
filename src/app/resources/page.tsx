@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -13,7 +13,7 @@ import {
   type ColumnFiltersState,
 } from '@tanstack/react-table';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { collection } from 'firebase/firestore';
+import { collection, doc } from 'firebase/firestore';
 
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Button } from '@/components/ui/button';
@@ -43,15 +43,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import {
-  deleteDocumentNonBlocking,
-  updateDocumentNonBlocking,
-} from '@/firebase/non-blocking-updates';
+import { useCollection, useFirestore, useMemoFirebase, useUser, useAuth, initiateAnonymousSignIn } from '@/firebase';
+import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { Resource } from '@/lib/types';
 import ResourceFormModal from '@/components/resources/resource-form-modal';
-import { doc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ResourcesPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -61,14 +58,23 @@ export default function ResourcesPage() {
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
 
   const { toast } = useToast();
-  const { user } = useUser();
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+
+  useEffect(() => {
+    if (auth && !isUserLoading && !user) {
+      initiateAnonymousSignIn(auth);
+    }
+  }, [auth, isUserLoading, user]);
 
   const resourcesQuery = useMemoFirebase(
     () => (firestore && user ? collection(firestore, 'resources') : null),
     [firestore, user]
   );
-  const { data: resources, isLoading } = useCollection<Resource>(resourcesQuery);
+  const { data: resources, isLoading: isLoadingResources } = useCollection<Resource>(resourcesQuery);
+
+  const isLoading = isUserLoading || (user && isLoadingResources);
 
   const handleDelete = () => {
     if (!firestore || !selectedResource?.id) return;
@@ -161,6 +167,49 @@ export default function ResourcesPage() {
     },
   });
 
+  const renderTableBody = () => {
+    if (isLoading) {
+      return (
+        <>
+          {[...Array(5)].map((_, i) => (
+            <TableRow key={i}>
+              <TableCell colSpan={columns.length}>
+                <Skeleton className="h-8 w-full" />
+              </TableCell>
+            </TableRow>
+          ))}
+        </>
+      );
+    }
+    if (table.getRowModel().rows?.length) {
+      return table.getRowModel().rows.map((row) => (
+        <TableRow
+          key={row.id}
+          data-state={row.getIsSelected() && 'selected'}
+        >
+          {row.getVisibleCells().map((cell) => (
+            <TableCell key={cell.id}>
+              {flexRender(
+                cell.column.columnDef.cell,
+                cell.getContext()
+              )}
+            </TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
+    return (
+      <TableRow>
+        <TableCell
+          colSpan={columns.length}
+          className="h-24 text-center"
+        >
+          No results.
+        </TableCell>
+      </TableRow>
+    );
+  }
+
   return (
     <DashboardLayout>
       <header className="bg-card border-b p-4 sm:p-6 flex items-center justify-between">
@@ -203,41 +252,7 @@ export default function ResourcesPage() {
                 ))}
               </TableHeader>
               <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      Loading resources...
-                    </TableCell>
-                  </TableRow>
-                ) : table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && 'selected'}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      No results.
-                    </TableCell>
-                  </TableRow>
-                )}
+                {renderTableBody()}
               </TableBody>
             </Table>
           </div>
