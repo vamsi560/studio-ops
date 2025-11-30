@@ -10,7 +10,21 @@ import {
 /** Initiate anonymous sign-in (non-blocking). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
   // CRITICAL: Call signInAnonymously directly. Do NOT use 'await signInAnonymously(...)'.
-  signInAnonymously(authInstance);
+  signInAnonymously(authInstance)
+    .then((userCredential) => {
+      console.log('Anonymous sign-in successful:', userCredential.user.uid);
+    })
+    .catch((error) => {
+      console.error('Anonymous sign-in failed:', {
+        code: error.code,
+        message: error.message,
+        error,
+      });
+      // Common error: auth/operation-not-allowed - means anonymous auth is not enabled in Firebase Console
+      if (error.code === 'auth/operation-not-allowed') {
+        console.error('⚠️ Anonymous authentication is not enabled in Firebase Console. Please enable it in Authentication > Sign-in method.');
+      }
+    });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
