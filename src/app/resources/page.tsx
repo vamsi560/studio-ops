@@ -43,7 +43,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useCollection, useFirestore, useMemoFirebase, useUser, useAuth, initiateAnonymousSignIn } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore, useMemoFirebase, useUser, useAuth } from '@/firebase/provider';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { Resource } from '@/lib/types';
 import ResourceFormModal from '@/components/resources/resource-form-modal';

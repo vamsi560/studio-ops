@@ -61,7 +61,8 @@ import {
 } from '@/ai/flows/summarize-resource-matches';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore, useMemoFirebase, useUser } from '@/firebase/provider';
 import type { Resource } from '@/lib/types';
 
 

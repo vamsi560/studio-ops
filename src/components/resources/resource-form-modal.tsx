@@ -23,7 +23,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
+import { useFirestore } from '@/firebase/provider';
 import {
   addDocumentNonBlocking,
   updateDocumentNonBlocking,

@@ -8,13 +8,16 @@ import FindCandidateModal from '@/components/dashboard/find-candidate-modal';
 import StatCard from '@/components/dashboard/stat-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { collection, doc, addDoc, serverTimestamp } from 'firebase/firestore';
-import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, useUser } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useFirestore, useMemoFirebase, useUser } from '@/firebase/provider';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { Resource, BenchAgeingData } from '@/lib/types';
 import BenchAgeing from './dashboard/bench-ageing';
 import GradeDistributionChart from './dashboard/grade-distribution-chart';
 import SkillDistributionChart from './dashboard/skill-distribution-chart';
 import { Users, UserX, TrendingUp, Sparkles, UserCheck, AlertCircle } from 'lucide-react';
-import { initiateAnonymousSignIn, useAuth } from '@/firebase';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { useAuth } from '@/firebase/provider';
 import { useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
