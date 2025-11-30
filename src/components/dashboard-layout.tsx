@@ -32,7 +32,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <SidebarHeader className="p-4">
           <div className="flex items-center gap-3">
              <Logo className="size-8 text-primary" />
-             <h1 className="text-xl font-semibold text-primary">BenchBoard</h1>
+             <h1 className="text-xl font-semibold text-primary">Bench Management</h1>
           </div>
         </SidebarHeader>
         <SidebarContent>
