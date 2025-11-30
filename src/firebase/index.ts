@@ -5,7 +5,8 @@ export { initializeFirebase, getSdks } from './init';
 
 // Export all other Firebase modules
 export * from './provider';
-export * from './client-provider';
+// Note: client-provider is NOT exported here to avoid circular dependencies
+// Import it directly: import { FirebaseClientProvider } from '@/firebase/client-provider'
 export * from './firestore/use-collection';
 export * from './firestore/use-doc';
 export * from './non-blocking-updates';
