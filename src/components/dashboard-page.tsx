@@ -43,7 +43,13 @@ export default function DashboardPage() {
     }
   }, [auth, isUserLoading, user]);
 
-  // Debug logging
+  const resourcesQuery = useMemoFirebase(
+    () => (firestore && user ? collection(firestore, 'resources') : null),
+    [firestore, user]
+  );
+  const { data: resources, isLoading: isLoadingResources, error: resourcesError } = useCollection<Resource>(resourcesQuery);
+  
+  // Debug logging - moved after resources declaration
   useEffect(() => {
     console.log('Dashboard state:', {
       isClient,
@@ -55,12 +61,6 @@ export default function DashboardPage() {
       isLoadingResources,
     });
   }, [isClient, auth, isUserLoading, user, firestore, resources, isLoadingResources]);
-
-  const resourcesQuery = useMemoFirebase(
-    () => (firestore && user ? collection(firestore, 'resources') : null),
-    [firestore, user]
-  );
-  const { data: resources, isLoading: isLoadingResources, error: resourcesError } = useCollection<Resource>(resourcesQuery);
   
   // Log errors
   useEffect(() => {
