@@ -1,36 +1,38 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, startOfMonth } from 'date-fns';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import Header from '@/components/dashboard/header';
 import UploadModal from '@/components/dashboard/upload-modal';
 import FindCandidateModal from '@/components/dashboard/find-candidate-modal';
 import StatCard from '@/components/dashboard/stat-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection } from 'firebase/firestore';
+import { collection, doc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useCollection, useFirestore, useMemoFirebase, addDocumentNonBlocking, useUser } from '@/firebase';
 import type { Resource, BenchAgeingData } from '@/lib/types';
 import BenchAgeing from './dashboard/bench-ageing';
 import GradeDistributionChart from './dashboard/grade-distribution-chart';
 import SkillDistributionChart from './dashboard/skill-distribution-chart';
-import { Users, Briefcase, UserX, TrendingUp, Sparkles } from 'lucide-react';
+import { Users, UserX, TrendingUp, Sparkles, UserCheck } from 'lucide-react';
 import { initiateAnonymousSignIn, useAuth } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const [isClient, setIsClient] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isFindCandidateModalOpen, setIsFindCandidateModalOpen] = useState(false);
   
+  const router = useRouter();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
   useEffect(() => {
     setIsClient(true);
-    if (!isUserLoading && !user && auth) {
+    if (auth && !isUserLoading && !user) {
         initiateAnonymousSignIn(auth);
     }
-  }, [isUserLoading, user, auth]);
+  }, [auth, isUserLoading, user]);
 
   const resourcesQuery = useMemoFirebase(
     () => (firestore && user ? collection(firestore, 'resources') : null),
@@ -47,18 +49,46 @@ export default function DashboardPage() {
     });
   };
   
-  const benchAgeingData = useMemo((): BenchAgeingData => {
+  const { benchAgeingData, highExperienceCount, newThisMonthCount, topSkill } = useMemo(() => {
     const today = new Date();
+    const startOfThisMonth = startOfMonth(today);
+
     const data: BenchAgeingData = { '0-30': 0, '31-60': 0, '61-90': 0, more_than_90: 0 };
+    let highExpCount = 0;
+    let newCount = 0;
+    const skills: Record<string, number> = {};
+
     (resources || []).forEach(resource => {
-      if (!resource.joiningDate) return;
-      const daysOnBench = differenceInDays(today, new Date(resource.joiningDate));
-      if (daysOnBench <= 30) data['0-30']++;
-      else if (daysOnBench <= 60) data['31-60']++;
-      else if (daysOnBench <= 90) data['61-90']++;
-      else data.more_than_90++;
+      const joiningDate = resource.joiningDate ? new Date(resource.joiningDate) : null;
+      if (joiningDate) {
+          const daysOnBench = differenceInDays(today, joiningDate);
+          if (daysOnBench <= 30) data['0-30']++;
+          else if (daysOnBench <= 60) data['31-60']++;
+          else if (daysOnBench <= 90) data['61-90']++;
+          else data.more_than_90++;
+
+          if (joiningDate >= startOfThisMonth) {
+              newCount++;
+          }
+      }
+
+      if (resource.grade && ['G8', 'G9'].includes(resource.grade.toUpperCase())) {
+          highExpCount++;
+      }
+
+      if (resource.primarySkill) {
+        skills[resource.primarySkill] = (skills[resource.primarySkill] || 0) + 1;
+      }
     });
-    return data;
+
+    const topSkillName = Object.keys(skills).length > 0 ? Object.keys(skills).reduce((a, b) => skills[a] > skills[b] ? a : b) : 'N/A';
+
+    return { 
+      benchAgeingData: data, 
+      highExperienceCount: highExpCount,
+      newThisMonthCount: newCount,
+      topSkill: topSkillName,
+    };
   }, [resources]);
 
   const gradeDistribution = useMemo(() => {
@@ -122,7 +152,7 @@ export default function DashboardPage() {
       <UploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
-        currentResourceIds={(resources || []).map(r => r.vamid)}
+        currentResourceIds={(resources || []).map(r => r.vamid).filter(Boolean)}
         onNewResources={handleNewResources}
       />
       <FindCandidateModal
@@ -131,11 +161,16 @@ export default function DashboardPage() {
       />
       <main className="p-4 sm:p-6 lg:p-8 space-y-6">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-          <StatCard icon={Users} title="Total Bench" value={resources?.length || 0} />
-          <StatCard icon={Briefcase} title="Internal Fulfilment" value="8" description="+2 this month" />
-          <StatCard icon={UserX} title="Client Rejections" value="3" />
-          <StatCard icon={TrendingUp} title="Hiring Forecast" value="12" />
-          <StatCard icon={Sparkles} title="Upskilling Forecast" value="6" />
+          <StatCard 
+            icon={Users} 
+            title="Total Bench" 
+            value={resources?.length || 0}
+            onClick={() => router.push('/resources')}
+            />
+          <StatCard icon={UserX} title="On Bench > 90 Days" value={benchAgeingData.more_than_90} />
+          <StatCard icon={UserCheck} title="High Experience (G8+)" value={highExperienceCount} />
+          <StatCard icon={TrendingUp} title="New This Month" value={newThisMonthCount} />
+          <StatCard icon={Sparkles} title="Top Skill" value={topSkill} />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
            <BenchAgeing data={benchAgeingData} />

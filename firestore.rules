@@ -43,19 +43,18 @@ service cloud.firestore {
 
     /**
      * @description Controls access to the collection of company resources.
-     * Allows any authenticated user to read resource data but denies all write operations
-     * to protect data integrity until a proper admin role is implemented.
+     * Allows any authenticated user to read, create, update, and delete resource data.
+     * This provides full CRUD capabilities for authenticated users managing resources.
      * @path /resources/{resourceId}
      * @allow (get) An authenticated user with UID 'user_abc' reads a specific resource document.
-     * @deny (create) An authenticated user with UID 'user_abc' attempts to create a new resource document.
-     * @principle Establishes a read-only pattern for globally accessible data, securing it from unauthorized modification.
+     * @allow (create) An authenticated user with UID 'user_abc' creates a new resource document.
+     * @allow (update) An authenticated user with UID 'user_abc' updates an existing resource document.
+     * @allow (delete) An authenticated user with UID 'user_abc' deletes a resource document.
+     * @principle Enables full data management for authenticated users while protecting against public access.
      */
     match /resources/{resourceId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if false;
-      allow delete: if false;
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
     }
 
     /**

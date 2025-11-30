@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase';
 
 export const metadata: Metadata = {
-  title: 'BenchBoard',
+  title: 'Bench Management',
   description: 'A tool for Bench resource Management',
 };
 

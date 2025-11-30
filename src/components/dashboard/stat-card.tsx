@@ -8,11 +8,16 @@ interface StatCardProps {
   icon: LucideIcon;
   description?: string;
   className?: string;
+  onClick?: () => void;
 }
 
-export default function StatCard({ title, value, icon: Icon, description, className }: StatCardProps) {
+export default function StatCard({ title, value, icon: Icon, description, className, onClick }: StatCardProps) {
+  const isClickable = !!onClick;
   return (
-    <Card className={cn('shadow-sm', className)}>
+    <Card 
+      className={cn('shadow-sm', isClickable && 'cursor-pointer hover:bg-muted/50 transition-colors', className)}
+      onClick={onClick}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
