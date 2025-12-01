@@ -3,29 +3,40 @@ import type { Resource } from '@/lib/types';
 
 // Get all resources
 export async function getAllResources(): Promise<Resource[]> {
-  const result = await pool.query(`
-    SELECT 
-      id::text,
-      vamid,
-      name,
-      joining_date::text as "joiningDate",
-      grade,
-      current_skill as "currentSkill",
-      primary_skill as "primarySkill",
-      total_exp as "totalExp"
-    FROM resources
-    ORDER BY created_at DESC
-  `);
-  return result.rows.map(row => ({
-    id: row.id,
-    vamid: row.vamid,
-    name: row.name,
-    joiningDate: row.joiningDate,
-    grade: row.grade,
-    currentSkill: row.currentSkill,
-    primarySkill: row.primarySkill,
-    totalExp: row.totalExp,
-  }));
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id::text,
+        vamid,
+        name,
+        joining_date::text as "joiningDate",
+        grade,
+        current_skill as "currentSkill",
+        primary_skill as "primarySkill",
+        total_exp as "totalExp"
+      FROM resources
+      ORDER BY created_at DESC
+    `);
+    
+    return result.rows.map(row => ({
+      id: row.id,
+      vamid: row.vamid,
+      name: row.name,
+      joiningDate: row.joiningDate,
+      grade: row.grade,
+      currentSkill: row.currentSkill,
+      primarySkill: row.primarySkill,
+      totalExp: row.totalExp,
+    }));
+  } catch (error) {
+    console.error('Database query error in getAllResources:', error);
+    // If table doesn't exist, return empty array instead of throwing
+    if (error instanceof Error && error.message.includes('does not exist')) {
+      console.warn('Resources table does not exist yet. Returning empty array.');
+      return [];
+    }
+    throw error;
+  }
 }
 
 // Get resource by ID

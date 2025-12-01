@@ -1,7 +1,6 @@
-import { pool } from './config';
+-- Database Initialization Script for Retool PostgreSQL Database
+-- Run this script directly in your PostgreSQL database to create the required tables
 
-// SQL schema as a constant (better for Next.js)
-const SCHEMA_SQL = `
 -- Resources table
 CREATE TABLE IF NOT EXISTS resources (
     id SERIAL PRIMARY KEY,
@@ -34,7 +33,7 @@ CREATE TABLE IF NOT EXISTS resources (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create indexes
+-- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_resources_vamid ON resources(vamid);
 CREATE INDEX IF NOT EXISTS idx_resources_joining_date ON resources(joining_date);
 CREATE INDEX IF NOT EXISTS idx_resources_grade ON resources(grade);
@@ -51,7 +50,7 @@ CREATE TABLE IF NOT EXISTS excel_uploads (
     status VARCHAR(50) DEFAULT 'completed'
 );
 
--- Dashboard metrics table
+-- Dashboard metrics table (single row for aggregated metrics)
 CREATE TABLE IF NOT EXISTS dashboard_metrics (
     id INTEGER PRIMARY KEY DEFAULT 1,
     total_bench INTEGER DEFAULT 0,
@@ -65,56 +64,4 @@ CREATE TABLE IF NOT EXISTS dashboard_metrics (
 
 -- Insert initial dashboard metrics record
 INSERT INTO dashboard_metrics (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
-`;
-
-export async function initializeDatabase() {
-  try {
-    // Execute schema
-    await pool.query(SCHEMA_SQL);
-    console.log('Database schema initialized successfully');
-  } catch (error) {
-    console.error('Error initializing database:', error);
-    throw error;
-  }
-}
-
-// Call this on server startup (in Next.js API route or server component)
-export async function ensureDatabaseInitialized() {
-  try {
-    // Check if resources table exists
-    const result = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'resources'
-      );
-    `);
-    
-    if (!result.rows[0].exists) {
-      console.log('Database tables not found, initializing...');
-      await initializeDatabase();
-      console.log('Database initialization completed');
-    } else {
-      console.log('Database tables already exist');
-    }
-  } catch (error) {
-    console.error('Error checking database:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    
-    // If table doesn't exist error, try to initialize
-    if (errorMessage.includes('does not exist') || errorMessage.includes('relation')) {
-      console.log('Table check failed, attempting initialization...');
-      try {
-        await initializeDatabase();
-        console.log('Database initialization completed after error');
-      } catch (initError) {
-        console.error('Failed to initialize database:', initError);
-        throw initError; // Re-throw to be handled by caller
-      }
-    } else {
-      // For other errors (connection issues, etc.), throw them
-      throw error;
-    }
-  }
-}
 

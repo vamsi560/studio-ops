@@ -1,6 +1,14 @@
-import { pool } from './config';
+const { Pool } = require('pg');
 
-// SQL schema as a constant (better for Next.js)
+const connectionString = 'postgresql://retool:npg_UWqxdlf1LmS7@ep-round-breeze-af1fyksh.c-2.us-west-2.retooldb.com/retool?sslmode=require';
+
+const pool = new Pool({
+  connectionString,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
 const SCHEMA_SQL = `
 -- Resources table
 CREATE TABLE IF NOT EXISTS resources (
@@ -67,54 +75,46 @@ CREATE TABLE IF NOT EXISTS dashboard_metrics (
 INSERT INTO dashboard_metrics (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 `;
 
-export async function initializeDatabase() {
+async function initDatabase() {
   try {
-    // Execute schema
+    console.log('Connecting to database...');
+    
+    // Test connection
+    await pool.query('SELECT NOW()');
+    console.log('✓ Database connection successful');
+    
+    console.log('Creating tables...');
     await pool.query(SCHEMA_SQL);
-    console.log('Database schema initialized successfully');
+    console.log('✓ Tables created successfully');
+    
+    // Verify tables
+    const result = await pool.query(`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('resources', 'excel_uploads', 'dashboard_metrics')
+      ORDER BY table_name
+    `);
+    
+    console.log('\n✓ Tables verified:');
+    result.rows.forEach(row => {
+      console.log(`  - ${row.table_name}`);
+    });
+    
+    console.log('\n✅ Database initialization completed successfully!');
+    process.exit(0);
   } catch (error) {
-    console.error('Error initializing database:', error);
-    throw error;
+    console.error('\n❌ Error initializing database:');
+    console.error(error.message);
+    if (error.stack) {
+      console.error('\nStack trace:');
+      console.error(error.stack);
+    }
+    process.exit(1);
+  } finally {
+    await pool.end();
   }
 }
 
-// Call this on server startup (in Next.js API route or server component)
-export async function ensureDatabaseInitialized() {
-  try {
-    // Check if resources table exists
-    const result = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'resources'
-      );
-    `);
-    
-    if (!result.rows[0].exists) {
-      console.log('Database tables not found, initializing...');
-      await initializeDatabase();
-      console.log('Database initialization completed');
-    } else {
-      console.log('Database tables already exist');
-    }
-  } catch (error) {
-    console.error('Error checking database:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    
-    // If table doesn't exist error, try to initialize
-    if (errorMessage.includes('does not exist') || errorMessage.includes('relation')) {
-      console.log('Table check failed, attempting initialization...');
-      try {
-        await initializeDatabase();
-        console.log('Database initialization completed after error');
-      } catch (initError) {
-        console.error('Failed to initialize database:', initError);
-        throw initError; // Re-throw to be handled by caller
-      }
-    } else {
-      // For other errors (connection issues, etc.), throw them
-      throw error;
-    }
-  }
-}
+initDatabase();
 
