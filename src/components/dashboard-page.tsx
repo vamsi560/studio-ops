@@ -7,17 +7,13 @@ import UploadModal from '@/components/dashboard/upload-modal';
 import FindCandidateModal from '@/components/dashboard/find-candidate-modal';
 import StatCard from '@/components/dashboard/stat-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, doc, addDoc, serverTimestamp } from 'firebase/firestore';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useFirestore, useMemoFirebase, useUser } from '@/firebase/provider';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import type { Resource, BenchAgeingData } from '@/lib/types';
 import BenchAgeing from './dashboard/bench-ageing';
 import GradeDistributionChart from './dashboard/grade-distribution-chart';
 import SkillDistributionChart from './dashboard/skill-distribution-chart';
 import { Users, UserX, TrendingUp, Sparkles, UserCheck, AlertCircle } from 'lucide-react';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
-import { useAuth } from '@/firebase/provider';
+import { useResources } from '@/lib/db/hooks/use-resources';
+import { addResources } from '@/app/actions/resources';
 import { useRouter } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -27,40 +23,22 @@ export default function DashboardPage() {
   const [isFindCandidateModalOpen, setIsFindCandidateModalOpen] = useState(false);
   
   const router = useRouter();
-  const auth = useAuth();
-  const { user, isUserLoading } = useUser();
-  const firestore = useFirestore();
-
+  
   useEffect(() => {
     setIsClient(true);
-    if (auth && !isUserLoading && !user) {
-        console.log('Dashboard: Initiating anonymous sign-in...');
-        try {
-          initiateAnonymousSignIn(auth);
-        } catch (error) {
-          console.error('Dashboard: Failed to initiate anonymous sign-in:', error);
-        }
-    }
-  }, [auth, isUserLoading, user]);
+  }, []);
 
-  const resourcesQuery = useMemoFirebase(
-    () => (firestore && user ? collection(firestore, 'resources') : null),
-    [firestore, user]
-  );
-  const { data: resources, isLoading: isLoadingResources, error: resourcesError } = useCollection<Resource>(resourcesQuery);
+  const { data: resources, isLoading: isLoadingResources, error: resourcesError, refetch } = useResources();
   
-  // Debug logging - moved after resources declaration
+  // Debug logging
   useEffect(() => {
     console.log('Dashboard state:', {
       isClient,
-      hasAuth: !!auth,
-      isUserLoading,
-      user: user?.uid || 'null',
-      hasFirestore: !!firestore,
       resourcesCount: resources?.length || 0,
       isLoadingResources,
+      error: resourcesError?.message,
     });
-  }, [isClient, auth, isUserLoading, user, firestore, resources, isLoadingResources]);
+  }, [isClient, resources, isLoadingResources, resourcesError]);
   
   // Log errors
   useEffect(() => {
@@ -68,14 +46,22 @@ export default function DashboardPage() {
       console.error('Dashboard: Error loading resources:', resourcesError);
     }
   }, [resourcesError]);
-  
-  const handleNewResources = (newResourcesData: Partial<Resource>[]) => {
-    if (!firestore) return;
-    const resourcesCollection = collection(firestore, 'resources');
-    
-    newResourcesData.forEach(resource => {
-      addDocumentNonBlocking(resourcesCollection, resource);
-    });
+
+  const handleNewResources = async (newResourcesData: Partial<Resource>[]) => {
+    try {
+      // Filter out resources with missing required fields
+      const validResources = newResourcesData.filter(r => 
+        r.vamid && r.name && r.joiningDate && r.grade
+      ) as Omit<Resource, 'id'>[];
+      
+      if (validResources.length > 0) {
+        await addResources(validResources);
+        // Refetch resources after adding
+        await refetch();
+      }
+    } catch (error) {
+      console.error('Error adding resources:', error);
+    }
   };
   
   const { benchAgeingData, highExperienceCount, newThisMonthCount, topSkill } = useMemo(() => {
@@ -152,7 +138,7 @@ export default function DashboardPage() {
       .slice(0, 5);
   }, [resources]);
 
-  const isLoading = isUserLoading || (user && isLoadingResources);
+  const isLoading = isLoadingResources;
 
   if (!isClient || isLoading) {
     return (
@@ -189,14 +175,12 @@ export default function DashboardPage() {
         onClose={() => setIsFindCandidateModalOpen(false)}
       />
       <main className="p-4 sm:p-6 lg:p-8 space-y-6">
-        {(resourcesError || (!user && !isUserLoading)) && (
+        {resourcesError && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Connection Issue</AlertTitle>
             <AlertDescription>
-              {!user && !isUserLoading 
-                ? "Failed to authenticate with Firebase. Please check: 1) Anonymous authentication is enabled in Firebase Console, 2) Firestore rules are deployed, 3) Firebase configuration is correct."
-                : resourcesError?.message || "Failed to load data from Firestore. Please check your console for details."}
+              Failed to load data from database: {resourcesError.message}. Please check your console for details.
             </AlertDescription>
           </Alert>
         )}
