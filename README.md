@@ -16,18 +16,19 @@ This is a NextJS starter in Firebase Studio.
    npm install
    ```
 
-2. **Set up Google AI API key (optional for local development):**
+2. **Set up Google AI API key:**
    
-   The app uses the `GOOGLE_GENAI_API_KEY` environment variable. For local development, you can:
+   The app uses the `GOOGLE_GENAI_API_KEY` environment variable. For local development:
    
    - Create a `.env.local` file in the root directory:
      ```bash
      GOOGLE_GENAI_API_KEY=your_google_ai_api_key_here
      ```
    
-   - Or use the hardcoded fallback in `src/ai/genkit.ts` (already configured)
-   
-   **Note:** In Vercel, the API key is set as an environment variable. For local dev, you can use `.env.local` or the hardcoded fallback.
+   **Note:** 
+   - In Vercel, the API key must be set as an environment variable in project settings
+   - Get a new API key from [Google AI Studio](https://aistudio.google.com/app/apikey) if needed
+   - Test your API key setup by visiting: `https://your-app.vercel.app/api/test-api-key`
 
 ### Running the Application
 
@@ -129,11 +130,12 @@ This project is configured for deployment to Vercel with all API keys hardcoded.
 
 ### Important Notes
 
-- ✅ `GOOGLE_GENAI_API_KEY` must be set as an environment variable in Vercel
+- ✅ `GOOGLE_GENAI_API_KEY` must be set as an environment variable in Vercel (required for all environments)
 - ✅ Firebase configuration is hardcoded in `src/firebase/config.ts`
 - ✅ The build script has been optimized for Vercel
-- ✅ For local development, use `.env.local` or the hardcoded fallback
-- ✅ Code reads from environment variables first, then falls back to hardcoded value
+- ✅ For local development, use `.env.local` file
+- ✅ Test API key configuration: Visit `/api/test-api-key` endpoint after deployment
+- ⚠️ **Important:** After setting/updating environment variables in Vercel, you must trigger a new deployment for changes to take effect
 
 ### Configuration Files
 
