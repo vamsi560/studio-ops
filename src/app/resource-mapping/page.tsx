@@ -86,6 +86,8 @@ export default function ResourceMappingPage() {
   const [benchFile, setBenchFile] = useState<File | null>(null);
   const [results, setResults] = useState<FindBestCandidateForAllRRFsOutput>([]);
   const [summary, setSummary] = useState<string>('');
+  // Store mapping of RRF ID to Account name from original RRF data
+  const [rrfAccountMap, setRrfAccountMap] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   const { user, isUserLoading } = useUser();
@@ -185,14 +187,25 @@ export default function ResourceMappingPage() {
         readFileAsJson(benchFile)
       ]);
 
+      // Create mapping of RRF ID to Account name from original RRF data
+      const accountMap: Record<string, string> = {};
+      rrfJson.forEach((rrf: any) => {
+        const rrfId = rrf["RRF ID"] || rrf["RRFID"] || rrf["RRF_ID"];
+        const accountName = rrf["Account"] || rrf["Account Name"] || rrf["AccountName"] || '';
+        if (rrfId) {
+          accountMap[String(rrfId)] = accountName || '';
+        }
+      });
+      setRrfAccountMap(accountMap);
+
       // Pre-process data to only send necessary columns to the AI
-      const relevantRrfData = rrfJson.map(rrf => ({
-        "RRF ID": rrf["RRF ID"],
-        "POS Title": rrf["POS Title"],
+      const relevantRrfData = rrfJson.map((rrf: any) => ({
+        "RRF ID": rrf["RRF ID"] || rrf["RRFID"] || rrf["RRF_ID"],
+        "POS Title": rrf["POS Title"] || rrf["POSTitle"] || rrf["POS_Title"],
         "Role": rrf["Role"],
       }));
 
-      const relevantBenchData = benchJson.map(bench => ({
+      const relevantBenchData = benchJson.map((bench: any) => ({
           "Name": bench["Name"],
           "VAMID": bench["VAMID"],
           "Skill": bench["Skill"],
@@ -209,6 +222,77 @@ export default function ResourceMappingPage() {
         title: "Analysis Complete",
         description: `Found potential matches for ${apiResult.length} RRFs.`
       })
+
+      // Save Excel uploads and data to database
+      try {
+        // Import mapper functions
+        const { mapExcelRowToRRF } = await import('@/lib/utils/excel-mapper');
+        const { mapExcelRowToResource } = await import('@/lib/utils/excel-mapper');
+
+        // Map and save RRF data
+        const rrfRecords = rrfJson
+          .map(mapExcelRowToRRF)
+          .filter(rrf => rrf.rrfId && rrf.rrfId.trim() !== '');
+
+        if (rrfRecords.length > 0) {
+          await fetch('/api/rrfs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rrfs: rrfRecords }),
+          });
+        }
+
+        // Map and save Bench/Resource data
+        const resourceRecords = benchJson
+          .map(mapExcelRowToResource)
+          .filter((resource): resource is NonNullable<typeof resource> => resource !== null);
+
+        if (resourceRecords.length > 0) {
+          await fetch('/api/bench-resources', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resources: resourceRecords }),
+          });
+        }
+
+        // Save Excel upload metadata
+        await Promise.all([
+          fetch('/api/excel-uploads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileName: rrfFile.name,
+              fileSize: rrfFile.size,
+              rowsProcessed: rrfJson.length,
+              fileType: 'rrf',
+              status: 'completed',
+            }),
+          }),
+          fetch('/api/excel-uploads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileName: benchFile.name,
+              fileSize: benchFile.size,
+              rowsProcessed: benchJson.length,
+              fileType: 'bench',
+              status: 'completed',
+            }),
+          }),
+        ]);
+
+        toast({
+          title: "Data Saved",
+          description: `Saved ${rrfRecords.length} RRF(s) and ${resourceRecords.length} resource(s) to database.`
+        });
+      } catch (dbError) {
+        console.error('Failed to save data to database:', dbError);
+        toast({
+          variant: 'destructive',
+          title: 'Database Save Warning',
+          description: 'Analysis completed but some data may not have been saved to the database.',
+        });
+      }
 
       // Generate summary after getting results
       const summaryResult = await summarizeResourceMatches({ results: apiResult });
@@ -231,6 +315,7 @@ export default function ResourceMappingPage() {
     setBenchFile(null);
     setResults([]);
     setSummary('');
+    setRrfAccountMap({});
   }
 
   const getSuitabilityBadge = (score: number) => {
@@ -355,14 +440,26 @@ export default function ResourceMappingPage() {
                 </CardHeader>
                 <CardContent>
                     <Accordion type="single" collapsible className="w-full">
-                        {results.map((result, index) => (
+                        {results.map((result, index) => {
+                          const accountName = rrfAccountMap[result.rrfId] || '';
+                          return (
                             <AccordionItem value={`item-${index}`} key={result.rrfId || index}>
                                 <AccordionTrigger>
-                                    <div className='flex justify-between w-full pr-4'>
-                                        <span className='font-semibold'>RRF ID: {result.rrfId}</span>
+                                    <div className='flex justify-between items-center w-full pr-4'>
+                                        <div className='flex items-center gap-2'>
+                                          <span className='font-semibold'>RRF ID: {result.rrfId}</span>
+                                          {accountName && (
+                                            <Badge variant="secondary" className="text-xs">
+                                              {accountName}
+                                            </Badge>
+                                          )}
+                                        </div>
                                         <span className='text-muted-foreground'>Top Match: {result.candidates[0]?.candidate.name} ({result.candidates[0]?.suitabilityScore}%)</span>
                                     </div>
                                 </AccordionTrigger>
+                            </AccordionItem>
+                          );
+                        })}
                                 <AccordionContent>
                                     <Table>
                                         <TableHeader>

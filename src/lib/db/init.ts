@@ -65,6 +65,29 @@ CREATE TABLE IF NOT EXISTS dashboard_metrics (
 
 -- Insert initial dashboard metrics record
 INSERT INTO dashboard_metrics (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+
+-- RRFs table for storing RRF (Resource Request Form) data
+CREATE TABLE IF NOT EXISTS rrfs (
+    id SERIAL PRIMARY KEY,
+    rrf_id VARCHAR(255) UNIQUE NOT NULL,
+    pos_title VARCHAR(255),
+    role VARCHAR(255),
+    account VARCHAR(255),
+    project VARCHAR(255),
+    description TEXT,
+    skills_required TEXT,
+    experience_required INTEGER,
+    grade VARCHAR(50),
+    location VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'open',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for rrfs table
+CREATE INDEX IF NOT EXISTS idx_rrfs_rrf_id ON rrfs(rrf_id);
+CREATE INDEX IF NOT EXISTS idx_rrfs_account ON rrfs(account);
+CREATE INDEX IF NOT EXISTS idx_rrfs_status ON rrfs(status);
 `;
 
 export async function initializeDatabase() {
