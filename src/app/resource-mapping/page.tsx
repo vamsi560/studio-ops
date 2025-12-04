@@ -457,9 +457,6 @@ export default function ResourceMappingPage() {
                                         <span className='text-muted-foreground'>Top Match: {result.candidates[0]?.candidate.name} ({result.candidates[0]?.suitabilityScore}%)</span>
                                     </div>
                                 </AccordionTrigger>
-                            </AccordionItem>
-                          );
-                        })}
                                 <AccordionContent>
                                     <Table>
                                         <TableHeader>
@@ -485,7 +482,8 @@ export default function ResourceMappingPage() {
                                     </Table>
                                 </AccordionContent>
                             </AccordionItem>
-                        ))}
+                          );
+                        })}
                     </Accordion>
                 </CardContent>
             </Card>
